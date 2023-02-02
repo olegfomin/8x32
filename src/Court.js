@@ -1,6 +1,8 @@
 import logo from './logo.svg';
 import './Court.css';
 import React, { useRef, useEffect } from 'react';
+import Menu from "./Menu"
+import ReactDOM from "react-dom/client";
 
   function Court() {
     function drawACourt(context) {
@@ -100,6 +102,26 @@ import React, { useRef, useEffect } from 'react';
       alert("I am here "+event.clientX+" "+event.clientY);
     }
 
+    function handleLoginClick(event) {
+      alert("handleLoginClick");
+    }
+
+    function handleLogoutClick(event) {
+      alert("handleLogoutClick");
+    }
+
+    function handleSettingsClick(event) {
+      alert("handleSettingsClick");
+    }
+
+    function handleCalibrationClick(event) {
+      alert("handleCalibrationClick");
+    }
+
+    function handleAboutClick(event) {
+      alert("handleAboutClick");
+    }
+
     React.useEffect(() => {
       const c = document.getElementById("myCanvas");
       const ctx = c.getContext("2d");
@@ -111,10 +133,23 @@ import React, { useRef, useEffect } from 'react';
 
     return (
         <div className="center" height="1300" width="700">
-          <h1 className="text-center">Control Panel</h1>
+          <div>
+            <button id="loginButton" onClick={handleLoginClick}>Login</button>
+            <button id="logoutButton" onClick={handleLogoutClick} disabled>Logout</button>
+            <button id="settingsButton" onClick={handleSettingsClick} disabled>Settings</button>
+            <button id="calibrationButton" onClick={handleCalibrationClick} disabled>Calibration</button>
+            <button id="aboutButton" onClick={handleAboutClick} disabled>About</button>
+          </div>
           <canvas id="myCanvas" className="center"  height="1200" width="590" onClick={handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>
+          <div id="loginWindow">
+            <form>
+              <label id="usernameLabel" htmlFor="username">Username:</label><input id="username" type="text"/>
+              <label  id = "passwordLabel" htmlFor="password">Password:</label><input id="password" type="password"/>
+              <button id = "submitButton">Submit</button>
+            </form>
+          </div>
         </div>);
   };
 

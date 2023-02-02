@@ -47,3 +47,92 @@
 .text-center {
   text-align: center;
 }
+
+#menu {
+  float: left;
+  width: 100px;
+  height: 50px;
+  background: url("./images/menu.png");
+}
+
+#loginWindow {
+  position: relative;
+  top: -1350px;
+
+  margin-left: 200px;
+  width: 300px;
+  height: 250px;
+  border-style: double;
+  border-color: yellow;
+  background-color: darkslateblue;
+  z-index: 2;
+}
+
+#loginButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
+#logoutButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
+#settingsButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
+#calibrationButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
+#aboutButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
+#submitButton {
+  margin-top: 50px;
+  width: 75px;
+  height: 35px;
+  margin-left: 120px ;
+}
+
+#myCanvas {
+  z-index: 1;
+}
+
+#username {
+  margin-top: 50px;
+}
+
+#password {
+  margin-top: 50px;
+}
+
+#usernameLabel {
+
+  color: yellow;
+  margin: 8px;
+}
+
+#passwordLabel {
+  color: yellow;
+  margin: 8px;
+}
+
+
+
+
