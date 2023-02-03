@@ -1,0 +1,13 @@
+#loginWindow {
+    position: relative;
+    top: -1350px;
+
+    margin-left: 200px;
+    width: 300px;
+    height: 250px;
+    border-style: double;
+    border-color: yellow;
+    background-color: darkslateblue;
+    display: none;
+    z-index: 2;
+}

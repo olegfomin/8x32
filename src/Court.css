@@ -55,19 +55,6 @@
   background: url("./images/menu.png");
 }
 
-#loginWindow {
-  position: relative;
-  top: -1350px;
-
-  margin-left: 200px;
-  width: 300px;
-  height: 250px;
-  border-style: double;
-  border-color: yellow;
-  background-color: darkslateblue;
-  z-index: 2;
-}
-
 #loginButton {
   float: left;
   width: 100px;
@@ -82,7 +69,7 @@
   margin-left: 5px ;
 }
 
-#settingsButton {
+#settingButton {
   float: left;
   width: 100px;
   height: 50px;
@@ -102,6 +89,14 @@
   height: 50px;
   margin-left: 5px ;
 }
+
+#startButton {
+  float: right;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
 
 #submitButton {
   margin-top: 50px;
