@@ -1,0 +1,13 @@
+#CalibrationWindow {
+    position: relative;
+    top: -1350px;
+
+    margin-left: 150px;
+    width: 400px;
+    height: 350px;
+    border-style: double;
+    border-color: yellow;
+    background-color: darkslateblue;
+    display: none;
+    z-index: 2;
+}

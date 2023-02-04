@@ -4,6 +4,7 @@ import Menu from "./Menu"
 import ReactDOM from "react-dom/client";
 import drawACourt from "./DrawCourtFunction"
 import LoginWindow from "./LoginWindow";
+import SettingsWindow from "./SettingsWindow";
 
 export default class Court extends React.Component {
 
@@ -13,7 +14,12 @@ export default class Court extends React.Component {
       this.handleAboutClick = this.handleAboutClick.bind(this);
       this.handleLoginClick = this.handleLoginClick.bind(this);
       this.state = {
-          "LoggedIn": false
+          "LoggedIn": false,
+          "Serve-X" : 460,
+          "Serve-Y" : 720,
+          "Home-X": 345,
+          "Home-Y": 700,
+          "ReturnHome": false
       };
   }
 
@@ -25,6 +31,7 @@ export default class Court extends React.Component {
     const lw = document.getElementById("loginWindow");
     lw.style.display = this.state.LoggedIn ? "none" : "inherit";
     const lb = document.getElementById("loginButton");
+    lb.textContent = !this.state.LoggedIn ? "Logoff" : "Login";
     lb.innerHTML = !this.state.LoggedIn ? "Logoff" : "Login";
 
     this.setState({"LoggedIn": !this.state.LoggedIn});
@@ -35,7 +42,9 @@ export default class Court extends React.Component {
   }
 
   handleSettingsClick(event) {
-    alert("handleSettingsClick");
+    event.preventDefault();
+    const sw = document.getElementById("SettingsWindow");
+    sw.style.display = "inherit";
   }
 
   handleCalibrationClick(event) {
@@ -50,7 +59,6 @@ export default class Court extends React.Component {
      alert("handleStartClick "+this.state.LoggedIn);
   }
 
-
   handleLoginCallback(event) {
     event.preventDefault();
 
@@ -63,7 +71,6 @@ export default class Court extends React.Component {
 
     const lw = document.getElementById("loginWindow");
     lw.style.display = "none";
-
   }
 
   componentDidMount() {
@@ -86,6 +93,7 @@ export default class Court extends React.Component {
             Your browser does not support the HTML canvas tag.
           </canvas>
           <LoginWindow defaultName={"rudolf"} callBackFunction={this.handleLoginCallback}></LoginWindow>
+            <SettingsWindow />
         </div>
     );
   };

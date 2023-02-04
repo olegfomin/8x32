@@ -1,0 +1,38 @@
+#SettingsWindow {
+    position: relative;
+    top: -1350px;
+
+    margin-left: 150px;
+    width: 400px;
+    height: 350px;
+    border-style: double;
+    border-color: yellow;
+    background-color: darkslateblue;
+    display: none;
+    z-index: 2;
+}
+
+p {
+    color: yellow;
+    text-align: center;
+}
+
+label {
+    color: yellow;
+    margin: 8px;
+}
+
+#yourOpponentLabel {
+    margin-left: 21px;
+}
+
+div {
+    margin-top: 5px;
+}
+
+#settingsSubmitButton {
+    height: 34px;
+    width: 89px;
+    margin-left: 160px;
+    margin-top: 20px;
+}
