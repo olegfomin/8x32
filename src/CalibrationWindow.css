@@ -4,10 +4,21 @@
 
     margin-left: 150px;
     width: 400px;
-    height: 350px;
+    height: 270px;
     border-style: double;
     border-color: yellow;
     background-color: darkslateblue;
     display: none;
     z-index: 2;
+}
+
+#calibrationSubmitButton {
+    height: 34px;
+    width: 89px;
+    margin-left: 160px;
+    margin-top: 20px;
+}
+
+#speedLabel {
+  margin-right: 30px;
 }

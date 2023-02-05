@@ -1,0 +1,13 @@
+#AboutWindow {
+    position: relative;
+    top: -1350px;
+
+    margin-left: 100px;
+    width: 500px;
+    height: 450px;
+    border-style: double;
+    border-color: yellow;
+    background-color: darkslateblue;
+    display: none;
+    z-index: 2;
+}

@@ -5,6 +5,8 @@ import ReactDOM from "react-dom/client";
 import drawACourt from "./DrawCourtFunction"
 import LoginWindow from "./LoginWindow";
 import SettingsWindow from "./SettingsWindow";
+import CalibrationWindow from "./CalibrationWindow";
+import AboutWindow from "./AboutWindow";
 
 export default class Court extends React.Component {
 
@@ -48,11 +50,16 @@ export default class Court extends React.Component {
   }
 
   handleCalibrationClick(event) {
-    alert("handleCalibrationClick");
+      event.preventDefault();
+      const sw = document.getElementById("CalibrationWindow");
+      sw.style.display = "inherit";
   }
 
   handleAboutClick(event) {
-    alert("handleAboutClick "+this.state.LoggedIn);
+      event.preventDefault();
+      const aw = document.getElementById("AboutWindow");
+      alert("aw="+aw);
+      aw.style.display = "inherit";
   }
 
   handleStartClick(event) {
@@ -93,7 +100,9 @@ export default class Court extends React.Component {
             Your browser does not support the HTML canvas tag.
           </canvas>
           <LoginWindow defaultName={"rudolf"} callBackFunction={this.handleLoginCallback}></LoginWindow>
-            <SettingsWindow />
+          <SettingsWindow />
+          <CalibrationWindow />
+          <AboutWindow />
         </div>
     );
   };
