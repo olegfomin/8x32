@@ -62,6 +62,13 @@ export default class Court extends React.Component {
       aw.style.display = "inherit";
   }
 
+  handleXY(event) {
+      event.preventDefault();
+      const xy = document.getElementById("xy");
+      xy.style.display = "inherit";
+  }
+
+
   handleStartClick(event) {
      alert("handleStartClick "+this.state.LoggedIn);
   }
@@ -82,18 +89,38 @@ export default class Court extends React.Component {
 
   componentDidMount() {
       const c = document.getElementById("myCanvas");
+      const xy = document.getElementById("xyButton");
+      const myCanvas = document.getElementById("myCanvas");
+      const xOffset = myCanvas.offsetLeft;
+      const xMax = xOffset+myCanvas.width;
+
+      const yOffset = myCanvas.offsetTop;
       const ctx = c.getContext("2d");
       drawACourt(c);
+
+      const handleMouseMove = (event) => {
+          const realX = event.clientX - xOffset >=0 && event.clientX - xOffset <=700 ? event.clientX - xOffset : "N/A";
+          const realY = event.clientY - yOffset >=0 ? event.clientY - yOffset : "N/A";
+
+          xy.innerHTML = "X/Y: "+realX+"/"+event.clientY;
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+
   }
+
+
+
 
   render() {
     return (
         <div className="center" height="1300" width="700">
-          <div>
+          <div id="controlPanel">
             <button id="loginButton" onClick={this.handleLoginClick}>Login</button>
             <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn}>Settings</button>
             <button id="calibrationButton" onClick={this.handleCalibrationClick} disabled={!this.state.LoggedIn}>Calibration</button>
             <button id="aboutButton" onClick={this.handleAboutClick}>About</button>
+            <button id="xyButton" onClick={this.handleXY}>X/Y: </button>
             <button id="startButton" onClick={this.handleStartClick} disabled={!this.state.LoggedIn}>Start</button>
           </div>
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>

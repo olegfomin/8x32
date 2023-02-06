@@ -13,6 +13,7 @@
   }
 }
 
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -48,11 +49,8 @@
   text-align: center;
 }
 
-#menu {
-  float: left;
-  width: 100px;
-  height: 50px;
-  background: url("./images/menu.png");
+#controlPanel {
+  position: fixed;
 }
 
 #loginButton {
@@ -89,6 +87,14 @@
   height: 50px;
   margin-left: 5px ;
 }
+
+#xyButton {
+  float: left;
+  width: 100px;
+  height: 50px;
+  margin-left: 5px ;
+}
+
 
 #startButton {
   float: right;
