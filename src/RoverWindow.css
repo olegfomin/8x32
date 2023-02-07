@@ -2,4 +2,6 @@
     width: 20px;
     height: 20px;
     background-image: url("./images/RoverVertical.png");
+    font-size: 6px;
+    color: aqua;
 }

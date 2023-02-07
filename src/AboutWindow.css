@@ -4,10 +4,25 @@
 
     margin-left: 100px;
     width: 500px;
-    height: 450px;
+    height: 840px;
     border-style: double;
     border-color: yellow;
+    color: yellow;
     background-color: darkslateblue;
     display: none;
     z-index: 2;
+}
+
+#aboutSubmitButton {
+    height: 34px;
+    width: 89px;
+    margin-left: 195px;
+    margin-top: 5px;
+}
+
+#UpfrontImage {
+    margin: auto;
+    height: 380px;
+    width: 440px;
+    background-image: url("./images/UpfrontView.png");
 }

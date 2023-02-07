@@ -51,6 +51,17 @@
 
 #controlPanel {
   position: fixed;
+  width: 697px;
+}
+
+#statusBar {
+  position: fixed;
+  border-style: double;
+  border-width: 2px;
+  border-color: black;
+  width: 697px;
+  color: red;
+  top: 60px
 }
 
 #loginButton {
@@ -88,21 +99,12 @@
   margin-left: 5px ;
 }
 
-#xyButton {
-  float: left;
-  width: 100px;
-  height: 50px;
-  margin-left: 5px ;
-}
-
-
 #startButton {
   float: right;
   width: 100px;
   height: 50px;
   margin-left: 5px ;
 }
-
 
 #submitButton {
   margin-top: 50px;

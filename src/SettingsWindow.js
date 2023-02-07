@@ -6,6 +6,7 @@ export default class SettingsWindow extends React.Component {
     }
 
     render() {
+
         return (
             <div id="SettingsWindow">
                 <form>
@@ -21,27 +22,36 @@ export default class SettingsWindow extends React.Component {
                     <div>
                         <label id="servingCoordXLabel" htmlFor="servingCoordXNumber">X:</label><input id="servingCoordXNumber"
                                                                                                       type="number"
-                                                                                                      value="500" ></input>
+                                                                                                      min="0"
+                                                                                                      max="700"
+                                                                                                      defaultValue={this.props.serveX}></input>
                     </div>
                     <div>
                         <label id="servingCoordYLabel" htmlFor="servingCoordYNumber">Y:</label><input id="servingCoordYNumber"
-                                                                                                      type="number"></input>
+                                                                                                      type="number"
+                                                                                                      min="700"
+                                                                                                      max="1200"
+                                                                                                      defaultValue={this.props.serveY}></input>
                     </div>
                     <p>Home coordinates:</p>
                     <div>
                         <label id="homeCoordXLabel" htmlFor="homeCoordXNumber">X:</label><input id="homeCoordXNumber"
                                                                                                type="number"
-                                                                                               value="300"></input>
+                                                                                               min="0"
+                                                                                               max="700"
+                                                                                               defaultValue={this.props.homeX}></input>
                     </div>
                     <div>
-                        <label id="homeCoordYLabel" htmlFor="servingYNumber">Y:</label><input id="servingCoordYNumber"
+                        <label id="homeCoordYLabel" htmlFor="servingYNumber">Y:</label><input id="homeCoordYNumber"
                                                                                              type="number"
-                                                                                             value="1200"></input>
+                                                                                             min="600"
+                                                                                             max="1200"
+                                                                                             defaultValue={this.props.homeY}></input>
                     </div>
                     <div>
-                        <label id="returnHomeLabel" htmlFor="returnHomeCheckBox">Return home after shot:</label><input id="returnHomeCheckBox" type="checkbox" value="false"/>
+                        <label id="returnHomeLabel" htmlFor="returnHomeCheckBox">Return home after shot:</label><input id="returnHomeCheckBox" type="checkbox" value={this.props.returnHome}/>
                     </div>
-                    <button id="settingsSubmitButton">Submit</button>
+                    <button id="settingsSubmitButton" onClick={this.props.handleSettingsSubmitClick}>Submit</button>
 
                 </form>
             </div>

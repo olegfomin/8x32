@@ -9,7 +9,8 @@ export default class AboutWindow extends React.Component {
             <div id="AboutWindow">
               <form>
                 <div>
-                    This web-site contains information, data, settings and it can control a universal four wheeled chassis.
+                    <div id="UpfrontImage" src="./images/UpfrontView.png"></div>
+                    <p>This web-site contains information, data, settings and it can control a universal four wheeled chassis.
                     This device is going to become autonomous but you can also control this machine from this web-site.
                     The author of this site can see a lot of applications for this apparatus starting from being a tennis-court
                     janitor, then it can be a tennis ball picker and at the very peak of its development it can be an avid
@@ -21,7 +22,7 @@ export default class AboutWindow extends React.Component {
                     be used is a military operations. Never I can see any real terminal weapon I can see mounted on top
                     of the invention. Where I am still hesitating is the mine fields defusing operation where this robot
                     can be really useful about and it can safe lives and health of people on the other hand it can also
-                    facilitate more rapid motion and deployment of the armed forces.
+                        facilitate more rapid motion and deployment of the armed forces.</p>
                 </div>
                 <button id="aboutSubmitButton" onClick={this.props.aboutCalibrationFunction}>Ok</button>
               </form>
