@@ -81,16 +81,16 @@ export default class CalibrationWindow extends React.Component {
 
     indexIntoSpeed(index) {
         switch (index) {
-            case 0: return "fullSpeed";
-            case 1: return "10%";
-            case 2: return "20%";
-            case 3: return "30%";
-            case 4: return "40%";
-            case 5: return "50%";
-            case 6: return "60%";
-            case 7: return "70%";
-            case 8: return "80%";
-            case 9: return "90%";
+            case 0: return "10%";
+            case 1: return "20%";
+            case 2: return "30%";
+            case 3: return "40%";
+            case 4: return "50%";
+            case 5: return "60%";
+            case 6: return "70%";
+            case 7: return "80%";
+            case 8: return "90%";
+            case 9: return "100%";
             default: throw new Error("Speed ArrayOutOfBound: "+index);
         }
     }
@@ -98,11 +98,16 @@ export default class CalibrationWindow extends React.Component {
     onSpeedChange() {
       const element = document.getElementById("speedComboBox");
       this.selectedSpeedIndex = this.speedIntoIndex(element.value);
+      const devNumberElement = document.getElementById("DeviationNumber");
+      devNumberElement.defaultValue = this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex];
     }
 
     onDirectionChange() {
         const element = document.getElementById("directionComboBox");
         this.selectedDirectionIndex = this.directionIntoIndex(element.value);
+        const devNumberElement = document.getElementById("DeviationNumber");
+        devNumberElement.defaultValue = this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex];
+
     }
 
     onDeviationNumberChange() {
@@ -112,57 +117,34 @@ export default class CalibrationWindow extends React.Component {
     }
 
     render() {
+        const calibRowsLeft = [];
+        for(let i=0; i<10; i++){
+            calibRowsLeft.push(<tr key={"l"+i} id={"l"+i}><td>{this.indexIntoSpeed(i)}</td><td><input id={"l"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td><td><input id={"l"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td></tr>);
+        }
+        const calibRowsRight = [];
+        for(let i=0; i<10; i++){
+            calibRowsRight.push(<tr key={"r"+i} id={"r"+i}><td>{this.indexIntoSpeed(i)}</td><td><input id={"r"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td><td><input id={"r"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td></tr>);
+        }
         return (
         <div id="CalibrationWindow">
             <form>
-                <p>Select direction and speed</p>
-                <p>Deviations to the left provide with minus sign</p>
-                <p>Deviations to the right do not provide with any sign</p>
+                <p>Select direction in degrees and speed in percents of full power</p>
+                <p>Deviations to the left provided with minus sign</p>
+                <p>Deviations to the right should not be supplied with any sign</p>
+                <p>The suggested correction is provided in percent the left motor
+                   supplied with more or less power over the right motor </p>
                 <div>
                     <div>
-                        <label id="directionLabel" htmlFor="directionComboBox">Direction:</label>
-                        <select id="directionComboBox" name="direction" onChange={this.onDirectionChange}>
-                            <option value="straight">Straight</option>
-                            <option value="left10">Left 10 degrees</option>
-                            <option value="left25">Left 25 degrees</option>
-                            <option value="left45">Left 45 degrees</option>
-                            <option value="left60">Left 60 degrees</option>
-                            <option value="left75">Left 75 degrees</option>
-                            <option value="left90">Left 90 degrees</option>
-                            <option value="left120">Left 120 degrees</option>
-                            <option value="left145">Left 145 degrees</option>
-                            <option value="right10">Right 10 degrees</option>
-                            <option value="right25">Right 25 degrees</option>
-                            <option value="right45">Right 45 degrees</option>
-                            <option value="right60">Right 60 degrees</option>
-                            <option value="right75">Right 75 degrees</option>
-                            <option value="right90">Right 90 degrees</option>
-                            <option value="right120">Right 120 degrees</option>
-                            <option value="right145">Right 145 degrees</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label id="speedLabel" htmlFor="speedComboBox">Speed:</label>
-                        <select id="speedComboBox" name="direction" onChange={this.onSpeedChange} defaultValue={this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex]}>
-                            <option value="fullSpeed">Full speed</option>
-                            <option value="percent90">90%</option>
-                            <option value="percent80">80%</option>
-                            <option value="percent70">70%</option>
-                            <option value="percent60">60%</option>
-                            <option value="percent50">50%</option>
-                            <option value="percent40">40%</option>
-                            <option value="percent30">30%</option>
-                            <option value="percent20">20%</option>
-                            <option value="percent10">10%</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label id="deviationNumberLabel" htmlFor="DeviationNumber" onChange={this.onDirectionChange}>Deviation:</label>
-                        <input id="DeviationNumber"
-                               type="number"
-                               defaultValue={this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex]}
-                               onChange={this.onDeviationNumberChange}
-                        ></input>
+                        <p>Turning left</p>
+                        <table>
+                            <th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th>
+                            {calibRowsLeft}
+                        </table>
+                        <p>Turning right</p>
+                        <table>
+                            <th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th>
+                            {calibRowsRight}
+                        </table>
                     </div>
                     <button id="calibrationSubmitButton" onClick={this.props.callBackCalibrationFunction}>Submit</button>
                 </div>

@@ -1,20 +1,20 @@
 function drawACourt(context) {
     const greenFieldWidth = 20;
-    const greenFieldHeight = 40;
+    const greenFieldHeight = 34.2;
     const courtWidth = 12;
     const courtHeight = 24;
     const tickLength = 0.5;
     const playPairLine = 1.37;
     const serviceLine2Net = 6.4;
-    const verticalCorrection = 5.3;
-    const horizontalCorrection = 2.75;
+    const verticalCorrection = 0.3;
+    const horizontalCorrection = 1.78; //2.75
     const pillarsOffset = 0.5;
     const pillarRadius = 5;
     const widthOffset = (greenFieldWidth - courtWidth - horizontalCorrection) / 2;
 
     const heightOffset = (greenFieldHeight - courtHeight - verticalCorrection) / 2;
 
-    const multiplier = 34;
+    const multiplier = 32; //
 
     const ctx = context.getContext("2d");
     const grd = ctx.createLinearGradient(0, greenFieldWidth * multiplier, 0, greenFieldHeight * multiplier);

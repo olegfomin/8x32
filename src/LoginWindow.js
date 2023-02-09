@@ -7,7 +7,6 @@ import drawACourt from "./DrawCourtFunction";
 export default class LoginWindow extends React.Component {
   componentDidMount() {
       const userName = document.getElementById("username");
-      userName.value = "rudolf";
   }
 
   render() {

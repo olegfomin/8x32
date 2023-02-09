@@ -22,10 +22,12 @@ export default class Court extends React.Component {
           "LoggedIn": false,
           "Serve_X" : 460,
           "Serve_Y" : 1000,
-          "Home_X": 345,
-          "Home_Y": 850,
+          "Home_X": 485,
+          "Home_Y": 1130,
           "ReturnHome": false,
           "WhoStarts": true,
+          "OpponentServesNow": true,
+          "GameStarted": false,
           Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -40,29 +42,28 @@ export default class Court extends React.Component {
   }
 
   handleClick(event) {
-    alert("I am here " + event.clientX + " " + event.clientY);
+    alert("I am here " + event.pageX + " " + event.pageY);
   }
 
   handleLoginClick(event) {
+    window.scrollTo(0, 0);
     const lw = document.getElementById("loginWindow");
     lw.style.display = this.state.LoggedIn ? "none" : "inherit";
     const lb = document.getElementById("loginButton");
-    lb.textContent = !this.state.LoggedIn ? "Logoff" : "Login";
-    lb.innerHTML = !this.state.LoggedIn ? "Logoff" : "Login";
+/*    lb.textContent = !this.state.LoggedIn ? "Logoff" : "Login";
+    lb.innerHTML = !this.state.LoggedIn ? "Logoff" : "Login"; */
 
-    this.setState({"LoggedIn": !this.state.LoggedIn});
-  }
-
-  handleLogoutClick(event) {
-    alert("handleLogoutClick");
+/*    this.setState({"LoggedIn": !this.state.LoggedIn}); */
   }
 
   handleSettingsClick(event) {
+    window.scrollTo(0, 0);
     const sw = document.getElementById("SettingsWindow");
     sw.style.display = "inherit";
   }
 
   handleSettingsSubmitClick(event) {
+
       event.preventDefault();
       const sw = document.getElementById("SettingsWindow");
       this.state.WhoStarts = document.getElementById("yourRoverLabel").checked;
@@ -91,19 +92,47 @@ export default class Court extends React.Component {
   }
 
   handleStartClick(event) {
-     alert("handleStartClick "+this.state.LoggedIn);
-      window.scrollTo(0, 900)
+      const startButton = document.getElementById("startButton");
+      startButton.innerHTML = "Connect...";
+      setTimeout(() => {
+          startButton.style.color = "red";
+          startButton["font-weight"] = "bold";
+          startButton.innerHTML = "Stop";
+      }, "2500");
+
+      this.setState({"GameStarted":true});
+      window.scrollTo(0, 500);
   }
 
   handleLoginCallback(event) {
     event.preventDefault();
+    const userName = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
 
-    this.setState({
-        "LoggedIn": true
-    });
+    if(userName === 'rudolf' && password === "123") {
+        const lb = document.getElementById("loginButton");
 
-    const lb = document.getElementById("loginButton");
-    lb.innerHTML = "Logoff";
+        lb.style.color = "red";
+        lb.style["font-weight"] = "bold";
+        lb.innerHTML = "Logoff";
+        this.setState({
+            "LoggedIn": true
+        });
+    } else {
+        this.setState({
+            "LoggedIn": false
+        });
+        const statusBar = document.getElementById("statusBar");
+        statusBar.style.color = "red";
+        statusBar.style["font-weight"] = "bold";
+
+        statusBar.innerHTML = "Login failed";
+        setTimeout(() => {
+            statusBar.style.color = "black";
+            statusBar["font-weight"] = "normal";
+            statusBar.innerHTML = "Login failed";
+        }, "1");
+    }
 
     const lw = document.getElementById("loginWindow");
     lw.style.display = "none";
@@ -121,10 +150,10 @@ export default class Court extends React.Component {
       drawACourt(c);
 
       const handleMouseMove = (event) => {
-          const realX = event.clientX - xOffset >=0 && event.clientX - xOffset <=700 ? event.clientX - xOffset : "Out";
-          const realY = event.clientY - yOffset >=82 && event.clientY - yOffset <=930 ? event.clientY - yOffset : "Out";
+          const realX = event.pageX - xOffset >=0 && event.pageX - xOffset <=700 ? event.pageX - xOffset : "Out";
+          const realY = event.pageY - yOffset >=82 && event.pageY - yOffset <=1300 ? event.pageY - yOffset : "Out";
 
-          statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
+          if(this.state.LoggedIn) statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
 
       };
 
@@ -132,15 +161,12 @@ export default class Court extends React.Component {
 
   }
 
-
-
-
   render() {
     return (
         <div className="center" height="1300" width="700">
           <div id="controlPanel">
             <button id="loginButton" onClick={this.handleLoginClick}>Login</button>
-            <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn && this.state.isMounted}>Settings</button>
+            <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn}>Settings</button>
             <button id="calibrationButton" onClick={this.handleCalibrationClick} disabled={!this.state.LoggedIn}>Calibration</button>
             <button id="aboutButton" onClick={this.handleAboutClick}>About</button>
 
@@ -150,7 +176,7 @@ export default class Court extends React.Component {
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>
-          <LoginWindow defaultName={"rudolf"} callBackFunction={this.handleLoginCallback}></LoginWindow>
+          <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
           <SettingsWindow homeX={this.state.Home_X}
                           homeY={this.state.Home_Y}
                           serveX={this.state.Serve_X}

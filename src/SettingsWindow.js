@@ -16,7 +16,8 @@ export default class SettingsWindow extends React.Component {
                                                                                               type="radio"/>
                     <label id="yourOpponentLabel" htmlFor="YourOpponentRB">Your Opponent</label><input id="YourOpponentRB"
                                                                                                     name="whoStarts"
-                                                                                                    type="radio"/>
+                                                                                                    type="radio"
+                                                                                                    checked="true" />
 
                     <p>Serving from coordinates:</p>
                     <div>
