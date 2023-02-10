@@ -20,14 +20,15 @@ export default class Court extends React.Component {
       this.handleSettingsSubmitClick = this.handleSettingsSubmitClick.bind(this);
       this.state = {
           "LoggedIn": false,
-          "Serve_X" : 460,
-          "Serve_Y" : 1000,
-          "Home_X": 485,
-          "Home_Y": 1130,
-          "ReturnHome": false,
-          "WhoStarts": true,
-          "OpponentServesNow": true,
-          "GameStarted": false,
+          "Serve_X" : 460, // The X coordinate where the rover serves from
+          "Serve_Y" : 1000, // The Y coordinate where the rover serves from
+          "Home_X": 485,    // The X coordinate where the rover goes towards after each shot
+          "Home_Y": 1130,   // The Y coordinate where the rover goes towards after each shot
+          "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
+          "WhoStarts": true, // Defines who starts either your rover or the opponent on the other side of the court
+          "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
+          "GameStarted": false, // Here all the buttons must be disabled even logoff so that the rover is not controlled
+          "EditInProcess" : false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
           Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -46,24 +47,32 @@ export default class Court extends React.Component {
   }
 
   handleLoginClick(event) {
-    window.scrollTo(0, 0);
-    const lw = document.getElementById("loginWindow");
-    lw.style.display = this.state.LoggedIn ? "none" : "inherit";
     const lb = document.getElementById("loginButton");
-/*    lb.textContent = !this.state.LoggedIn ? "Logoff" : "Login";
-    lb.innerHTML = !this.state.LoggedIn ? "Logoff" : "Login"; */
+    const lw = document.getElementById("loginWindow");
+    if(!this.state.LoggedIn) {
+        window.scrollTo(0, 0);
+        lw.style.display = "inherit";
+    } else {
+        lw.style.display = "none";
+        lb.style.color = "black"
+        lb.style.fontWeight = "normal";
+        lb.innerHTML = "Login";
 
-/*    this.setState({"LoggedIn": !this.state.LoggedIn}); */
+        this.setState({"LoggedIn" : false});
+    }
   }
 
+  // Calling the Settings form that includes Home coordinates, Service coordinates and who begins the game
   handleSettingsClick(event) {
     window.scrollTo(0, 0);
     const sw = document.getElementById("SettingsWindow");
     sw.style.display = "inherit";
+    this.EditInProcess = true;
+    this.setState({"EditInProcess" : true});
   }
 
+// Settings form completed
   handleSettingsSubmitClick(event) {
-
       event.preventDefault();
       const sw = document.getElementById("SettingsWindow");
       this.state.WhoStarts = document.getElementById("yourRoverLabel").checked;
@@ -72,6 +81,7 @@ export default class Court extends React.Component {
       this.state.Home_X = document.getElementById('homeCoordXNumber').value;
       this.state.Home_Y = document.getElementById('homeCoordYNumber').value;
       this.state.ReturnHome = document.getElementById('returnHomeCheckBox').value;
+      this.setState({"EditInProcess" : false});
 
       sw.style.display = "none";
   }
@@ -79,9 +89,12 @@ export default class Court extends React.Component {
   handleCalibrationClick(event) {
       const cw = document.getElementById("CalibrationWindow");
       cw.style.display = "inherit";
+      this.setState({"EditInProcess" : true});
   }
 
   handleCalibrationSubmitClick(event) {
+      event.preventDefault();
+      this.setState({"EditInProcess" : false});
 
   }
 
@@ -89,6 +102,7 @@ export default class Court extends React.Component {
       event.preventDefault();
       const aw = document.getElementById("AboutWindow");
       aw.style.display = "inherit";
+      this.setState({"EditInProcess":true});
   }
 
   handleStartClick(event) {
@@ -128,10 +142,9 @@ export default class Court extends React.Component {
 
         statusBar.innerHTML = "Login failed";
         setTimeout(() => {
-            statusBar.style.color = "black";
             statusBar["font-weight"] = "normal";
-            statusBar.innerHTML = "Login failed";
-        }, "1");
+            statusBar.innerHTML = "Please, click the Login button to access the system";
+        }, "3400");
     }
 
     const lw = document.getElementById("loginWindow");
@@ -140,12 +153,11 @@ export default class Court extends React.Component {
 
   componentDidMount() {
       const c = document.getElementById("myCanvas");
-      const statusBar = document.getElementById("statusBar");
-      const myCanvas = document.getElementById("myCanvas");
-      const xOffset = myCanvas.offsetLeft;
-      const xMax = xOffset+myCanvas.width;
+      this.statusBar = document.getElementById("statusBar");
+      const xOffset = c.offsetLeft;
+      const xMax = xOffset+c.width;
 
-      const yOffset = myCanvas.offsetTop;
+      const yOffset = c.offsetTop;
       const ctx = c.getContext("2d");
       drawACourt(c);
 
@@ -153,7 +165,7 @@ export default class Court extends React.Component {
           const realX = event.pageX - xOffset >=0 && event.pageX - xOffset <=700 ? event.pageX - xOffset : "Out";
           const realY = event.pageY - yOffset >=82 && event.pageY - yOffset <=1300 ? event.pageY - yOffset : "Out";
 
-          if(this.state.LoggedIn) statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
+          if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
 
       };
 
@@ -165,18 +177,18 @@ export default class Court extends React.Component {
     return (
         <div className="center" height="1300" width="700">
           <div id="controlPanel">
-            <button id="loginButton" onClick={this.handleLoginClick}>Login</button>
-            <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn}>Settings</button>
-            <button id="calibrationButton" onClick={this.handleCalibrationClick} disabled={!this.state.LoggedIn}>Calibration</button>
-            <button id="aboutButton" onClick={this.handleAboutClick}>About</button>
+            <button id="loginButton" onClick={this.handleLoginClick || this.state.EditInProcess}>Login</button>
+            <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn || this.state.EditInProcess}>Settings</button>
+            <button id="calibrationButton" onClick={this.handleCalibrationClick} disabled={!this.state.LoggedIn || this.state.EditInProcess}>Calibration</button>
+            <button id="aboutButton" onClick={this.handleAboutClick} disabled={this.state.EditInProcess}>About</button>
 
-            <button id="startButton" onClick={this.handleStartClick} disabled={!this.state.LoggedIn}>Start</button>
+            <button id="startButton" onClick={this.handleStartClick} disabled={!this.state.LoggedIn || this.state.EditInProcess}>Start</button>
           </div>
-          <div id="statusBar">Here is a status</div>
+          <div id="statusBar">Please, click the 'Login' button to access the system</div>
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>
-          <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
+          <LoginWindow callBackFunction={this.handleLoginCallback} disabled={!this.state.EditInProcess}></LoginWindow>
           <SettingsWindow homeX={this.state.Home_X}
                           homeY={this.state.Home_Y}
                           serveX={this.state.Serve_X}
@@ -184,7 +196,9 @@ export default class Court extends React.Component {
                           returnHome={this.state.ReturnHome}
                           WhoStarts={this.state.WhoStarts}
                           handleSettingsSubmitClick={this.handleSettingsSubmitClick}/>
-          <CalibrationWindow Speed2DirectionArr={this.state.Speed2DirectionArr}/>
+          <CalibrationWindow Speed2DirectionArr={this.state.Speed2DirectionArr}
+                             handleCalibrationSubmitClick={this.state.handleCalibrationSubmitClick}
+                             disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow />
         </div>
     );

@@ -1,6 +1,8 @@
 import './CalibrationWindow.css';
 import React, { useRef, useEffect } from 'react';
-
+/* This form contains two tables the first one the correctional data while rover turns left with different speeds
+and the other one also contains 2D array with correctional data while the rover turns right
+ */
 export default class CalibrationWindow extends React.Component {
 
     constructor(state) {
@@ -137,16 +139,16 @@ export default class CalibrationWindow extends React.Component {
                     <div>
                         <p>Turning left</p>
                         <table>
-                            <th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th>
-                            {calibRowsLeft}
+                            <thead><tr><th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th></tr></thead>
+                            <tbody>{calibRowsLeft}</tbody>
                         </table>
                         <p>Turning right</p>
                         <table>
-                            <th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th>
-                            {calibRowsRight}
+                            <thead><tr><th>dir\spd</th><th>10%</th><th>25%</th><th>45%</th><th>60%</th><th>75%</th><th>90%</th><th>100%</th></tr></thead>
+                            <tbody>{calibRowsRight}</tbody>
                         </table>
                     </div>
-                    <button id="calibrationSubmitButton" onClick={this.props.callBackCalibrationFunction}>Submit</button>
+                    <button id="calibrationSubmitButton" onClick={this.props.handleCalibrationSubmitClick}>Submit</button>
                 </div>
             </form>
         </div>);
