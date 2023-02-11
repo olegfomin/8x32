@@ -1,7 +1,10 @@
 #Rover {
+    position: relative;
     width: 20px;
     height: 20px;
-    background-image: url("./images/RoverVertical.png");
-    font-size: 6px;
+    background-color: black;
+    font-size: 14px;
     color: aqua;
+    top: -330px;
+    left: 335px;
 }

@@ -24,7 +24,7 @@ export default class AboutWindow extends React.Component {
                     can be really useful about and it can safe lives and health of people on the other hand it can also
                         facilitate more rapid motion and deployment of the armed forces.</p>
                 </div>
-                <button id="aboutSubmitButton" onClick={this.props.aboutCalibrationFunction}>Ok</button>
+                <button id="aboutSubmitButton" onClick={this.props.handleAboutSubmitClick}>Ok</button>
               </form>
             </div>
         );

@@ -1,5 +1,5 @@
 import './CalibrationWindow.css';
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 /* This form contains two tables the first one the correctional data while rover turns left with different speeds
 and the other one also contains 2D array with correctional data while the rover turns right
  */
@@ -7,62 +7,10 @@ export default class CalibrationWindow extends React.Component {
 
     constructor(state) {
         super(state);
-        this.selectedSpeedIndex = 0;
-        this.selectedDirectionIndex = 0;
-        this.onSpeedChange = this.onSpeedChange.bind(this);
-        this.onDirectionChange = this.onDirectionChange.bind(this);
-        this.directionIntoIndex = this.directionIntoIndex.bind(this);
         this.speedIntoIndex = this.speedIntoIndex.bind(this);
-        this.onDeviationNumberChange = this.onDeviationNumberChange.bind();
     }
+
     componentDidMount() {
-    }
-
-    directionIntoIndex(dirVal) {
-        switch (dirVal) {
-            case "straight": return 0;
-            case "left10": return 1;
-            case "left25": return 2;
-            case "left45": return 3;
-            case "left60": return 4;
-            case "left75": return 5;
-            case "left90": return 6;
-            case "left120": return 7;
-            case "left145": return 8;
-            case "right10": return 9;
-            case "right25": return 10;
-            case "right45": return 11;
-            case "right60": return 12;
-            case "right75": return 13;
-            case "right90": return 14;
-            case "right120": return 15;
-            case "right145": return 16;
-            default: throw new Error(`Unknown value: ${dirVal}`)
-
-        }
-    }
-
-    indexIntoDirection(index) {
-        switch(index) {
-            case 0: return "straight";
-            case 1: return "left10";
-            case 2: return "left25";
-            case 3: return "left45";
-            case 4: return "left60";
-            case 5: return "left75";
-            case 6: return "left90";
-            case 7: return "left120";
-            case 8: return "left145";
-            case 9: return "right10";
-            case 10: return "right25";
-            case 11: return "right45";
-            case 12: return "right60";
-            case 13: return "right75";
-            case 14: return "right90";
-            case 15: return "right120";
-            case 16: return "right145";
-            default: throw new Error("ArrayOutOfBound: "+index);
-        }
     }
 
     speedIntoIndex(speed) {
@@ -95,27 +43,6 @@ export default class CalibrationWindow extends React.Component {
             case 9: return "100%";
             default: throw new Error("Speed ArrayOutOfBound: "+index);
         }
-    }
-
-    onSpeedChange() {
-      const element = document.getElementById("speedComboBox");
-      this.selectedSpeedIndex = this.speedIntoIndex(element.value);
-      const devNumberElement = document.getElementById("DeviationNumber");
-      devNumberElement.defaultValue = this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex];
-    }
-
-    onDirectionChange() {
-        const element = document.getElementById("directionComboBox");
-        this.selectedDirectionIndex = this.directionIntoIndex(element.value);
-        const devNumberElement = document.getElementById("DeviationNumber");
-        devNumberElement.defaultValue = this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex];
-
-    }
-
-    onDeviationNumberChange() {
-        const element = document.getElementById("DeviationNumber");
-        this.props.Speed2DirectionArr[this.selectedSpeedIndex][this.selectedDirectionIndex] = element.value;
-
     }
 
     render() {
