@@ -257,7 +257,6 @@ export default class Court extends React.Component {
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
           <RoverWindow visible={this.state.isConnected} />
-          <TennisBallWindow />
         </div>
     );
   };
