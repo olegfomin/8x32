@@ -6,6 +6,7 @@ import SettingsWindow from "./SettingsWindow";
 import CalibrationWindow from "./CalibrationWindow";
 import AboutWindow from "./AboutWindow";
 import RoverWindow from "./RoverWindow";
+import TennisBallWindow from "./TennisBallWindow";
 
 export default class Court extends React.Component {
 
@@ -22,10 +23,10 @@ export default class Court extends React.Component {
       this.handleAboutSubmitClick = this.handleAboutSubmitClick.bind(this);
       this.state = {
           "LoggedIn": false,
-          "Serve_X" : 500, // The X coordinate where the rover serves from
+          "Serve_X" : 400, // The X coordinate where the rover serves from
           "Serve_Y" : 1120, // The Y coordinate where the rover serves from
-          "Home_X": 345,    // The X coordinate where the rover goes towards after each shot
-          "Home_Y": 1110,   // The Y coordinate where the rover goes towards after each shot
+          "Home_X": 335,    // The X coordinate where the rover goes towards after each shot
+          "Home_Y": 1100,   // The Y coordinate where the rover goes towards after each shot
           "Reachable_Rect_X_From": 444,
           "Reachable_Rect_Y_from": 700,
           "Reachable_Rect_X_to": 444,
@@ -83,13 +84,12 @@ export default class Court extends React.Component {
   handleSettingsSubmitClick(event) {
       event.preventDefault();
       const sw = document.getElementById("SettingsWindow");
-      this.state.WhoStarts = document.getElementById('YourRoverRB').value;
-      console.log("this.state.WhoStarts="+this.state.WhoStarts);
+      this.state.WhoStarts = document.getElementById('YourRoverRB').checked;
       this.state.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
       this.state.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
       this.state.Home_X = parseInt(document.getElementById('homeCoordXNumber').value);
       this.state.Home_Y = parseInt(document.getElementById('homeCoordYNumber').value);
-      this.state.ReturnHome = document.getElementById('returnHomeCheckBox').value;
+      this.state.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
       this.setState({"EditInProcess" : false});
 
       sw.style.display = "none";
@@ -147,15 +147,14 @@ export default class Court extends React.Component {
                   this.setState({"ConnectionInProcess":false});
                   this.setState({"isConnected":true});
               }, "2500");
-              console.log("WhoStarts="+this.state===true);
               if(this.state.WhoStarts) { // The rover starts then put it on the serving position and asking the user to show the place where the rover shoots
                   this.statusBar.innerHTML = "Aim the ball into the service area";
-                  this.rover.top = this.calculateRoverY(this.state.Serve_Y);
-                  this.rover.left = this.state.Serve_X;
+                  this.rover.style.top = ""+this.calculateRoverY(this.state.Serve_Y)+"px";
+                  this.rover.style.left = ""+this.state.Serve_X+"px";
                   window.scrollTo(0, 0); // Rolling the scroller to the end
               } else {
-                  this.rover.top = this.calculateRoverY(this.state.Home_Y);
-                  this.rover.left = this.state.Home_X;
+                  this.rover.style.top = ""+this.calculateRoverY(this.state.Home_Y)+"px";
+                  this.rover.style.left = ""+this.state.Home_X+"px";
                   this.statusBar.innerHTML = "Point the area where the rover must go";
                   window.scrollTo(0, 500); // Rolling the scroller to the end
               }
@@ -199,35 +198,40 @@ export default class Court extends React.Component {
   }
 
   componentDidMount() {
-      const c = document.getElementById("myCanvas");
+      this.c = document.getElementById("myCanvas");
       this.statusBar = document.getElementById("statusBar");
       this.cw = document.getElementById("CalibrationWindow");
       this.aw = document.getElementById("AboutWindow");
       this.startButton = document.getElementById("startButton");
+      this.motherPanel = document.getElementById("motherPanel");
       this.rover = document.getElementById("Rover");
 
-      const xOffset = c.offsetLeft;
-      const xMax = xOffset+c.width;
+      this.xOffset = this.c.offsetLeft;
+      this.yOffset = this.c.offsetTop;
 
-      const yOffset = c.offsetTop;
-      const ctx = c.getContext("2d");
-      drawACourt(c);
+      const ctx = this.c.getContext("2d");
+      drawACourt(this.c);
 
       const handleMouseMove = (event) => {
-          const realX = event.pageX - xOffset >=0 && event.pageX - xOffset <=700 ? event.pageX - xOffset : "Out";
-          const realY = event.pageY - yOffset >=82 && event.pageY - yOffset <=1300 ? event.pageY - yOffset : "Out";
+          const realX = event.pageX - this.xOffset >=0 && event.pageX - this.xOffset <=700 ? event.pageX - this.xOffset : "Out";
+          const realY = event.pageY - this.yOffset >=82 && event.pageY - this.yOffset <=1300 ? event.pageY - this.yOffset : "Out";
 
           if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
 
       };
 
-      window.addEventListener('mousemove', handleMouseMove);
+      const handleResize = () => {
+          this.xOffset = this.c.offsetLeft;
+          this.yOffset = this.c.offsetTop;
+      }
 
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('resize', handleResize);
   }
 
   render() {
     return (
-        <div className="center" height="1300" width="700">
+        <div id="motherPanel" className="center" height="1300" width="700">
           <div id="controlPanel">
             <button id="loginButton" onClick={this.handleLoginClick} disabled={this.state.EditInProcess || this.state.isConnected}>Login</button>
             <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn || this.state.EditInProcess || this.state.isConnected}>Settings</button>
@@ -253,6 +257,7 @@ export default class Court extends React.Component {
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
           <RoverWindow visible={this.state.isConnected} />
+          <TennisBallWindow />
         </div>
     );
   };
