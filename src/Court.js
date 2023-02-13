@@ -21,12 +21,17 @@ export default class Court extends React.Component {
       this.handleCalibrationClick = this.handleCalibrationClick.bind(this);
       this.handleCalibrationSubmitClick = this.handleCalibrationSubmitClick.bind(this);
       this.handleAboutSubmitClick = this.handleAboutSubmitClick.bind(this);
+      this.handleClick = this.handleClick.bind(this);
       this.state = {
           "LoggedIn": false,
           "Serve_X" : 400, // The X coordinate where the rover serves from
           "Serve_Y" : 1120, // The Y coordinate where the rover serves from
           "Home_X": 335,    // The X coordinate where the rover goes towards after each shot
           "Home_Y": 1100,   // The Y coordinate where the rover goes towards after each shot
+          "Current_X": 400,
+          "Current_Y": 1120,
+          "Target_X": 400,
+          "Target_Y": 1120,
           "Reachable_Rect_X_From": 444,
           "Reachable_Rect_Y_from": 700,
           "Reachable_Rect_X_to": 444,
@@ -49,10 +54,30 @@ export default class Court extends React.Component {
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
       };
+
   }
 
   handleClick(event) {
-    alert("I am here " + event.pageX + " " + event.pageY);
+    if(this.state.isConnected && this.state.OpponentServesNow) { // Rover should move now
+       let xOffset = this.state.Target_X-this.state.Current_X;
+       let yOffset = this.state.Target_Y-this.state.Current_Y;
+
+       let xOffsetInc = xOffset/12;
+       let yOffsetInc = yOffset/12;
+       let xOffsetArr = [];
+       let yOffsetArr = [];
+
+       for(let i=0; i < 12; i++) {
+         this.state.Current_X =+ xOffset;
+         xOffsetArr.push(this.state.Current_X);
+         this.state.Current_Y =+ yOffset;
+         yOffsetArr.push(this.state.Current_Y);
+       }
+       console.log("xOffsetArr="+xOffsetArr);
+       console.log("yOffsetArr="+yOffsetArr);
+
+    }
+
   }
 
   handleLoginClick(event) {
@@ -256,7 +281,8 @@ export default class Court extends React.Component {
                              handleCalibrationSubmitClick={this.handleCalibrationSubmitClick}
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
-          <RoverWindow visible={this.state.isConnected} />
+          <RoverWindow visible={this.state.isConnected} top={this.calculateRoverY(this.state.Current_Y)} left={this.state.Current_Y}/>
+          <TennisBallWindow visible={false} />
         </div>
     );
   };

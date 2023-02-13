@@ -1,0 +1,11 @@
+#TennisBallImage {
+    position: relative;
+    max-height: 20px;
+    max-width: 20px;
+    min-height: 15px;
+    max-width: 15px;
+    background-size: 15px;
+    left: 87px;
+    top: -532px;
+    background-image: url("./images/Tennis-Ball.png");
+}
