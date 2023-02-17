@@ -12,6 +12,9 @@ export default class Court extends React.Component {
 
   constructor(props) {
       super(props);
+      this.xOffset = 0; // Temporary setting/declaring this variable to zero they will take their correct value
+      this.yOffset = 0; // when component mounts
+
       this.handleLoginCallback = this.handleLoginCallback.bind(this);
       this.handleAboutClick = this.handleAboutClick.bind(this);
       this.handleLoginClick = this.handleLoginClick.bind(this);
@@ -22,6 +25,7 @@ export default class Court extends React.Component {
       this.handleCalibrationSubmitClick = this.handleCalibrationSubmitClick.bind(this);
       this.handleAboutSubmitClick = this.handleAboutSubmitClick.bind(this);
       this.handleClick = this.handleClick.bind(this);
+      this.resetState = this.resetState.bind(this);
       this.state = {
           "LoggedIn": false,
           "Serve_X" : 400, // The X coordinate where the rover serves from
@@ -57,27 +61,68 @@ export default class Court extends React.Component {
 
   }
 
+  resetState() {
+      this.setState({
+          "LoggedIn": false,
+          "Serve_X" : 400, // The X coordinate where the rover serves from
+          "Serve_Y" : 1120, // The Y coordinate where the rover serves from
+          "Home_X": 335,    // The X coordinate where the rover goes towards after each shot
+          "Home_Y": 1100,   // The Y coordinate where the rover goes towards after each shot
+          "Current_X": 400,
+          "Current_Y": 1120,
+          "Target_X": 400,
+          "Target_Y": 1120,
+          "Reachable_Rect_X_From": 444,
+          "Reachable_Rect_Y_from": 700,
+          "Reachable_Rect_X_to": 444,
+          "Reachable_Rect_Y_to": 700,
+          "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
+          "WhoStarts": true, // Defines who starts either your rover or the opponent on the other side of the court
+          "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
+          "GameStarted": false, // Here all the buttons must be disabled even logoff so that the rover is not controlled
+          "ConnectionInProcess": false, // The connection with rover's being established
+          "isConnected": false, // The connection with a rover has been established
+          "EditInProcess" : false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
+          Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+      });
+  };
+
+
+
   handleClick(event) {
+    if(this.state.isConnected) {
+
+    this.setState({"Target_X": event.pageX, "Target_Y": event.pageY});
     if(this.state.isConnected && this.state.OpponentServesNow) { // Rover should move now
-       let xOffset = this.state.Target_X-this.state.Current_X;
-       let yOffset = this.state.Target_Y-this.state.Current_Y;
+        let xOffset = event.pageX-this.state.Current_X;
+        let yOffset = event.pageY-this.state.Current_Y;
 
-       let xOffsetInc = xOffset/12;
-       let yOffsetInc = yOffset/12;
-       let xOffsetArr = [];
-       let yOffsetArr = [];
+        let xOffsetInc = xOffset/12;
+        let yOffsetInc = yOffset/12;
 
-       for(let i=0; i < 12; i++) {
-         this.state.Current_X =+ xOffset;
-         xOffsetArr.push(this.state.Current_X);
-         this.state.Current_Y =+ yOffset;
-         yOffsetArr.push(this.state.Current_Y);
-       }
-       console.log("xOffsetArr="+xOffsetArr);
-       console.log("yOffsetArr="+yOffsetArr);
-
+        let counter=0;
+        let currentX = this.state.Current_X;
+        let currentY = this.state.Current_Y;
+        const intervalId = setInterval(()=>{
+           currentX += xOffsetInc;
+           currentY += yOffsetInc;
+           this.setState({"Current_X":  + currentX});
+           this.setState({"Current_Y":  + currentY});
+           if(counter==11) clearInterval(intervalId);
+           counter++;
+           },100);
+            this.setState({"Current_X": event.pageX, "Current_Y": event.pageY});
+        }
     }
-
   }
 
   handleLoginClick(event) {
@@ -86,6 +131,7 @@ export default class Court extends React.Component {
     if(!this.state.LoggedIn) {
         window.scrollTo(0, 0);
         lw.style.display = "inherit";
+        this.resetState();
     } else {
         lw.style.display = "none";
         lb.style.color = "black"
@@ -101,7 +147,6 @@ export default class Court extends React.Component {
     window.scrollTo(0, 0);
     const sw = document.getElementById("SettingsWindow");
     sw.style.display = "inherit";
-    this.EditInProcess = true;
     this.setState({"EditInProcess" : true});
   }
 
@@ -110,6 +155,7 @@ export default class Court extends React.Component {
       event.preventDefault();
       const sw = document.getElementById("SettingsWindow");
       this.state.WhoStarts = document.getElementById('YourRoverRB').checked;
+      console.log("WhoStarts ="+document.getElementById('YourRoverRB').checked);
       this.state.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
       this.state.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
       this.state.Home_X = parseInt(document.getElementById('homeCoordXNumber').value);
@@ -146,7 +192,7 @@ export default class Court extends React.Component {
     }
 
   calculateRoverY(mouseY) {
-      return 800-mouseY;
+      return -Math.abs(mouseY-1450);
   }
 
   handleStartClick(event) {
@@ -162,7 +208,7 @@ export default class Court extends React.Component {
           }, "1500");
       } else { // if the rover connecting the fun begins
           if(!this.state.ConnectionInProcess) {
-              this.state.connectionInProcess = true;
+              this.setState({"connectionInProcess" : true});
               this.startButton.innerHTML = "Connect...";
               setTimeout(() => {
                   this.startButton.style.color = "red";
@@ -180,6 +226,8 @@ export default class Court extends React.Component {
               } else {
                   this.rover.style.top = ""+this.calculateRoverY(this.state.Home_Y)+"px";
                   this.rover.style.left = ""+this.state.Home_X+"px";
+                  this.setState({"Current_X": this.state.Home_X});
+                  this.setState({"Current_Y": this.state.Home_Y});
                   this.statusBar.innerHTML = "Point the area where the rover must go";
                   window.scrollTo(0, 500); // Rolling the scroller to the end
               }
@@ -281,7 +329,7 @@ export default class Court extends React.Component {
                              handleCalibrationSubmitClick={this.handleCalibrationSubmitClick}
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
-          <RoverWindow visible={this.state.isConnected} top={this.calculateRoverY(this.state.Current_Y)} left={this.state.Current_Y}/>
+          <RoverWindow visible={this.state.isConnected} top={this.calculateRoverY(this.state.Current_Y)} left={this.state.Current_X-this.xOffset}/>
           <TennisBallWindow visible={false} />
         </div>
     );
