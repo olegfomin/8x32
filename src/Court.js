@@ -5,10 +5,13 @@ import LoginWindow from "./LoginWindow";
 import SettingsWindow from "./SettingsWindow";
 import CalibrationWindow from "./CalibrationWindow";
 import AboutWindow from "./AboutWindow";
-import RoverWindow from "./RoverWindow";
+// import RoverWindow from "./RoverWindow";
 import TennisBallWindow from "./TennisBallWindow";
 
 export default class Court extends React.Component {
+    startButton;
+    statusBar;
+    cw;
 
   constructor(props) {
       super(props);
@@ -25,15 +28,15 @@ export default class Court extends React.Component {
       this.handleCalibrationSubmitClick = this.handleCalibrationSubmitClick.bind(this);
       this.handleAboutSubmitClick = this.handleAboutSubmitClick.bind(this);
       this.handleClick = this.handleClick.bind(this);
-      this.resetState = this.resetState.bind(this);
+      this.redrawPicture = this.redrawPicture.bind(this);
       this.state = {
           "LoggedIn": false,
-          "Serve_X" : 400, // The X coordinate where the rover serves from
-          "Serve_Y" : 1120, // The Y coordinate where the rover serves from
-          "Home_X": 335,    // The X coordinate where the rover goes towards after each shot
-          "Home_Y": 1100,   // The Y coordinate where the rover goes towards after each shot
-          "Current_X": 400,
-          "Current_Y": 1120,
+          "Serve_X" : 376, // The X coordinate where the rover serves from
+          "Serve_Y" : 946, // The Y coordinate where the rover serves from
+          "Home_X": 291,    // The X coordinate where the rover goes towards after each shot
+          "Home_Y": 946,   // The Y coordinate where the rover goes towards after each shot
+          "Current_X": 291,
+          "Current_Y": 946,
           "Target_X": 400,
           "Target_Y": 1120,
           "Reachable_Rect_X_From": 444,
@@ -41,7 +44,7 @@ export default class Court extends React.Component {
           "Reachable_Rect_X_to": 444,
           "Reachable_Rect_Y_to": 700,
           "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
-          "WhoStarts": true, // Defines who starts either your rover or the opponent on the other side of the court
+          "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
           "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
           "GameStarted": false, // Here all the buttons must be disabled even logoff so that the rover is not controlled
           "ConnectionInProcess": false, // The connection with rover's being established
@@ -61,77 +64,61 @@ export default class Court extends React.Component {
 
   }
 
-  resetState() {
-      this.setState({
-          "LoggedIn": false,
-          "Serve_X" : 400, // The X coordinate where the rover serves from
-          "Serve_Y" : 1120, // The Y coordinate where the rover serves from
-          "Home_X": 335,    // The X coordinate where the rover goes towards after each shot
-          "Home_Y": 1100,   // The Y coordinate where the rover goes towards after each shot
-          "Current_X": 400,
-          "Current_Y": 1120,
-          "Target_X": 400,
-          "Target_Y": 1120,
-          "Reachable_Rect_X_From": 444,
-          "Reachable_Rect_Y_from": 700,
-          "Reachable_Rect_X_to": 444,
-          "Reachable_Rect_Y_to": 700,
-          "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
-          "WhoStarts": true, // Defines who starts either your rover or the opponent on the other side of the court
-          "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
-          "GameStarted": false, // Here all the buttons must be disabled even logoff so that the rover is not controlled
-          "ConnectionInProcess": false, // The connection with rover's being established
-          "isConnected": false, // The connection with a rover has been established
-          "EditInProcess" : false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
-          Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-      });
-  };
-
+  redrawPicture(x,y)
+  {
+    drawACourt(this.ctx);
+    this.ctx.fillStyle = "orange";
+    this.ctx.beginPath();  //start the path
+    this.ctx.arc(x, y, 12, 0, Math.PI*2); //draw the circle
+    this.ctx.fill();
+    this.ctx.fillStyle = "black";
+    this.ctx.beginPath();  //start the path
+    this.ctx.arc(x, y, 10, 0, Math.PI*2); //draw the circle
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.fillStyle = "yellow";
+    this.ctx.font = "12px Arial";
+    this.ctx.fillText("R", x-5, y+3);
+    this.ctx.closePath(); //close the circle path
+    this.ctx.fill(); //fill the circle
+  }
 
 
   handleClick(event) {
-    if(this.state.isConnected) {
+    if(this.state.isConnected) { // Rover should move now
+        let xy=this.getMousePos(this.canvas, event);
 
-    this.setState({"Target_X": event.pageX, "Target_Y": event.pageY});
-    if(this.state.isConnected && this.state.OpponentServesNow) { // Rover should move now
-        let xOffset = event.pageX-this.state.Current_X;
-        let yOffset = event.pageY-this.state.Current_Y;
+        const offsetX = xy.x - this.state.Current_X;
+        const offsetY = xy.y - this.state.Current_Y;
+        const stepX= offsetX/20.0;
+        const stepY= offsetY/20.0;
 
-        let xOffsetInc = xOffset/12;
-        let yOffsetInc = yOffset/12;
+        this.redrawPicture(xy.x, xy.y);
+        let counter = 0;
 
-        let counter=0;
-        let currentX = this.state.Current_X;
-        let currentY = this.state.Current_Y;
         const intervalId = setInterval(()=>{
-           currentX += xOffsetInc;
-           currentY += yOffsetInc;
-           this.setState({"Current_X":  + currentX});
-           this.setState({"Current_Y":  + currentY});
-           if(counter==11) clearInterval(intervalId);
-           counter++;
-           },100);
-            this.setState({"Current_X": event.pageX, "Current_Y": event.pageY});
-        }
-    }
-  }
+            this.setState({Current_X: this.state.Current_X+stepX});
+            this.setState({Current_Y: this.state.Current_Y+stepY});
 
-  handleLoginClick(event) {
+            this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+
+            if(counter==20) {
+                clearInterval(intervalId);
+                return;
+            }
+            counter++;
+
+        }, 50);
+
+    };
+  };
+
+   handleLoginClick(event) {
     const lb = document.getElementById("loginButton");
     const lw = document.getElementById("loginWindow");
     if(!this.state.LoggedIn) {
         window.scrollTo(0, 0);
         lw.style.display = "inherit";
-        this.resetState();
     } else {
         lw.style.display = "none";
         lb.style.color = "black"
@@ -155,11 +142,13 @@ export default class Court extends React.Component {
       event.preventDefault();
       const sw = document.getElementById("SettingsWindow");
       this.state.WhoStarts = document.getElementById('YourRoverRB').checked;
-      console.log("WhoStarts ="+document.getElementById('YourRoverRB').checked);
       this.state.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
       this.state.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
       this.state.Home_X = parseInt(document.getElementById('homeCoordXNumber').value);
       this.state.Home_Y = parseInt(document.getElementById('homeCoordYNumber').value);
+      this.setState({"Current_X": this.state.Home_X});
+      this.setState({"Current_Y": this.state.Home_Y});
+
       this.state.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
       this.setState({"EditInProcess" : false});
 
@@ -191,11 +180,8 @@ export default class Court extends React.Component {
 
     }
 
-  calculateRoverY(mouseY) {
-      return -Math.abs(mouseY-1450);
-  }
-
   handleStartClick(event) {
+//      this.redrawPicture(this.state.Current_X-this.xOffset, this.state.Current_Y-this.yOffset);
       if(this.state.isConnected) { // If it is already connected then disconnect the rover
           this.startButton.innerHTML = "Disconnect...";
           setTimeout(() => {
@@ -206,6 +192,9 @@ export default class Court extends React.Component {
               this.setState({"ConnectionInProcess":false});
               this.setState({"isConnected":false});
           }, "1500");
+          this.setState({"Current_X": this.state.Home_X});
+          this.setState({"Current_Y": this.state.Home_Y});
+          drawACourt(this.ctx);
       } else { // if the rover connecting the fun begins
           if(!this.state.ConnectionInProcess) {
               this.setState({"connectionInProcess" : true});
@@ -218,31 +207,23 @@ export default class Court extends React.Component {
                   this.setState({"ConnectionInProcess":false});
                   this.setState({"isConnected":true});
               }, "2500");
-              if(this.state.WhoStarts) { // The rover starts then put it on the serving position and asking the user to show the place where the rover shoots
-                  this.statusBar.innerHTML = "Aim the ball into the service area";
-                  this.rover.style.top = ""+this.calculateRoverY(this.state.Serve_Y)+"px";
-                  this.rover.style.left = ""+this.state.Serve_X+"px";
-                  window.scrollTo(0, 0); // Rolling the scroller to the end
-              } else {
-                  this.rover.style.top = ""+this.calculateRoverY(this.state.Home_Y)+"px";
-                  this.rover.style.left = ""+this.state.Home_X+"px";
                   this.setState({"Current_X": this.state.Home_X});
                   this.setState({"Current_Y": this.state.Home_Y});
                   this.statusBar.innerHTML = "Point the area where the rover must go";
                   window.scrollTo(0, 500); // Rolling the scroller to the end
               }
-
+              this.redrawPicture(this.state.Current_X, this.state.Current_Y);
           }
       };
 
-  }
+
 
   handleLoginCallback(event) {
     event.preventDefault();
     const userName = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    if(userName === 'rudolf' && password === "123") {
+    if((userName === 'rudolf' || userName==='oleg') && password === "123") {
         const lb = document.getElementById("loginButton");
 
         lb.style.color = "red";
@@ -270,32 +251,46 @@ export default class Court extends React.Component {
     lw.style.display = "none";
   }
 
+  getMousePos(canvas, evt) {
+    let rect = canvas.getBoundingClientRect(), // abs. size of element
+        scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for x
+        scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for y
+
+    return {
+        x: (evt.clientX - rect.left) * scaleX,   // scale mouse coordinates after they have
+        y: (evt.clientY - rect.top) * scaleY     // been adjusted to be relative to element
+    }
+  }
+
+
   componentDidMount() {
-      this.c = document.getElementById("myCanvas");
+      this.canvas = document.getElementById("myCanvas");
       this.statusBar = document.getElementById("statusBar");
       this.cw = document.getElementById("CalibrationWindow");
       this.aw = document.getElementById("AboutWindow");
       this.startButton = document.getElementById("startButton");
-      this.motherPanel = document.getElementById("motherPanel");
-      this.rover = document.getElementById("Rover");
 
-      this.xOffset = this.c.offsetLeft;
-      this.yOffset = this.c.offsetTop;
+      this.xOffset = this.canvas.offsetLeft;
+      this.yOffset = this.canvas.offsetTop;
 
-      const ctx = this.c.getContext("2d");
-      drawACourt(this.c);
+      this.ctx = this.canvas.getContext("2d");
+      drawACourt(this.ctx);
+
 
       const handleMouseMove = (event) => {
-          const realX = event.pageX - this.xOffset >=0 && event.pageX - this.xOffset <=700 ? event.pageX - this.xOffset : "Out";
-          const realY = event.pageY - this.yOffset >=82 && event.pageY - this.yOffset <=1300 ? event.pageY - this.yOffset : "Out";
 
-          if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${realX}`+`  Y=${realY}`;
+         let xy=this.getMousePos(this.canvas, event);
+
+         const enclosedX = xy.x >=0 && xy.x <=590 ? Math.round(xy.x) : "Out";
+         const enclosedY = xy.y >=70 && xy.y <=1095 ? Math.round(xy.y) : "Out";
+
+         if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
 
       };
 
       const handleResize = () => {
-          this.xOffset = this.c.offsetLeft;
-          this.yOffset = this.c.offsetTop;
+          this.xOffset = this.canvas.offsetLeft;
+          this.yOffset = this.canvas.offsetTop;
       }
 
       window.addEventListener('mousemove', handleMouseMove);
@@ -329,7 +324,6 @@ export default class Court extends React.Component {
                              handleCalibrationSubmitClick={this.handleCalibrationSubmitClick}
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
           <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
-          <RoverWindow visible={this.state.isConnected} top={this.calculateRoverY(this.state.Current_Y)} left={this.state.Current_X-this.xOffset}/>
           <TennisBallWindow visible={false} />
         </div>
     );

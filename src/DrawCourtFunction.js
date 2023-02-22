@@ -1,4 +1,4 @@
-function drawACourt(context) {
+function drawACourt(ctx) {
     const greenFieldWidth = 20;
     const greenFieldHeight = 34.2;
     const courtWidth = 12;
@@ -16,7 +16,6 @@ function drawACourt(context) {
 
     const multiplier = 32; //
 
-    const ctx = context.getContext("2d");
     const grd = ctx.createLinearGradient(0, greenFieldWidth * multiplier, 0, greenFieldHeight * multiplier);
     grd.addColorStop(0, "lightgreen");
     grd.addColorStop(1, "darkgreen");

@@ -20,7 +20,7 @@ export default class RoverWindow extends React.Component {
 
     render() {
         return (
-            <div id="Rover" style={{"display" : this.props.visible ? "inherit" : "none",
+            <div id="Rover" style={{"display" : this.props.visible ? "none" : "none",
                                     "top": this.props.top,
                                     "left": this.props.left}} >Ro</div>
         );
