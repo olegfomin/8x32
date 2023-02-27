@@ -11,6 +11,32 @@ import {Buffer} from 'buffer';
 
 
 export default class Court extends React.Component {
+    ON_SAME_SIDE      = 0;
+    ON_OPPOSITE_SIDES = 1;
+    ON_CORRIDOR_LEFT  = 2;
+    ON_CORRIDOR_RIGHT = 3;
+
+    X_COURT_MAX_COORD = 590;
+    Y_COURT_MAX_COORD = 1095;
+    X_COURT_MIN_COORD = 0;
+    Y_COURT_MIN_COORD = 70;
+
+    Y_NET_COORDINATE       = 544;
+    X_LEFT_CORRIDOR_LEFT   =  8;
+    X_LEFT_CORRIDOR_RIGHT  =  64;
+    X_LEFT_CORRIDOR_MEDiAN = (this.X_LEFT_CORRIDOR_RIGHT+this.X_LEFT_CORRIDOR_LEFT)/2;
+    X_RIGHT_CORRIDOR_LEFT  =  520;
+    X_RIGHT_CORRIDOR_RIGHT = 575;
+    X_RIGHT_CORRIDOR_MEDIAN= (this.X_RIGHT_CORRIDOR_LEFT+this.X_RIGHT_CORRIDOR_RIGHT)/2;
+    CORRIDOR_LENGTH        = 46;
+    CORRIDOR_BOTTOM_Y      = this.Y_NET_COORDINATE + this.CORRIDOR_LENGTH/2;
+    CORRIDOR_TOP_Y         = this.Y_NET_COORDINATE - this.CORRIDOR_LENGTH/2;
+    X_MEDIAN_LINE          = 292;
+    X_DMZ_TOP_LEFT_COORD   = 70;
+    Y_DMZ_TOP_LEFT_COORD   = 524;
+    X_DMZ_BOTTOM_RIGHT_COORD = 500;
+    Y_DMZ_BOTTOM_RIGHT_COORD = 563;
+
     startButton;
     statusBar;
     lw;
@@ -71,6 +97,7 @@ export default class Court extends React.Component {
 
     }
 
+    // Redraws the entire picture of the court with the 'Rover' circle in the new place
     redrawPicture(x, y) {
         drawACourt(this.ctx);
         this.ctx.fillStyle = "orange";
@@ -89,36 +116,80 @@ export default class Court extends React.Component {
         this.ctx.fill(); //fill the circle
     }
 
-
+// This handler would move the picture of the rover towards the point where the mouse
+// was clicked on
     handleClick(event) {
         if (this.state.isConnected) { // Rover should move now
             let xy = this.getMousePos(this.canvas, event);
 
-            const offsetX = xy.x - this.state.Current_X;
-            const offsetY = xy.y - this.state.Current_Y;
-            const stepX = offsetX / 20.0;
-            const stepY = offsetY / 20.0;
+//            const route = this.routeBuilder(xy.x, xy.y);
 
-            this.redrawPicture(xy.x, xy.y);
-            let counter = 0;
+//            console.log("route x1="+route[0].x1+" x2="+route[0].x2+" y1="+route[0].y1+" y2="+route[0].y2);
 
-            const intervalId = setInterval(() => {
-                this.setState({Current_X: this.state.Current_X + stepX});
-                this.setState({Current_Y: this.state.Current_Y + stepY});
+            const route = [];
+            route.push({"x1":xy.x, "x2":this.state.Current_X, "y1":xy.y, "y2":this.state.Current_Y});
 
-                this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+            for(let i=0; i < route.length; i++) {
+                const vector = route[i];
+                const offsetX = vector.x1 - vector.x2;
+                const offsetY = vector.y1 - vector.y2;
+                const stepX = offsetX / 20.0;
+                const stepY = offsetY / 20.0;
 
-                if (counter == 20) {
-                    clearInterval(intervalId);
-                    return;
-                }
-                counter++;
+                this.redrawPicture(xy.x, xy.y);
+                let counter = 0;
 
-            }, 50);
+                const intervalId = setInterval(() => {
+                    this.setState({Current_X: this.state.Current_X + stepX});
+                    this.setState({Current_Y: this.state.Current_Y + stepY});
 
-        }
-        ;
+                    this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+
+                    if (counter == 20) {
+                        clearInterval(intervalId);
+                        return;
+                    }
+                    counter++;
+
+                }, 50);
+
+            }
+        };
     };
+
+    // The function returns 0 if both current and target Y belong to the same part of the court
+    // The function returns 1 if the current and target sides are on the different sides of the court
+    // it renders 2 if the target is on the left corridor
+    // and it returns 3 it the target belongs to the right corridor
+    findSides(currentX, currentY, targetX, targetY) {
+        if((currentY < this.CORRIDOR_TOP_Y && targetY < this.CORRIDOR_TOP_Y) ||
+           (currentY > this.CORRIDOR_BOTTOM_Y && targetY > this.CORRIDOR_BOTTOM_Y)) return this.ON_SAME_SIDE;
+
+
+        if((currentY < this.CORRIDOR_TOP_Y && targetY > this.CORRIDOR_BOTTOM_Y) ||
+           (currentY > this.CORRIDOR_BOTTOM_Y && targetY < this.CORRIDOR_TOP_Y)) return this.ON_OPPOSITE_SIDES;
+
+        return targetX > this.X_MEDIAN_LINE ? this.ON_CORRIDOR_RIGHT : this.ON_CORRIDOR_LEFT;
+
+    }
+
+    // Builds the route from point A(x, y) to point B(x, y). The input is a target's x and y. The output
+    // is an array of intermediate x and y like that [{x1,x2,y1,y2}, {x1,x2,y1,y2}]
+    routeBuilder(targetX, targetY) {
+        this.setState({"Target_X": targetX});
+        this.setState({"Target_Y": targetY});
+
+        const changingSides = this.findSides(this.state.Current_X, this.state.Current_Y,
+                                             this.state.Target_X, this.state.Target_Y);
+        const route = [];
+        switch (changingSides) {
+            case this.ON_SAME_SIDE: route.push({"x1": this.state.Current_X, "x2": this.state.Target_X,
+                                                "y1": this.state.Current_Y, "y2": this.state.Target_Y}); break;
+            default: throw Error("Other cases not implemented yet");
+        }
+
+        return route;
+    }
 
     handleLoginClick(event) {
         const lb = document.getElementById("loginButton");
@@ -223,8 +294,7 @@ export default class Court extends React.Component {
         }
     };
 
-
-
+  /* Handles the tap on the "Submit" button on the Login screen */
   handleLoginCallback(event) {
     event.preventDefault();
     const userName = document.getElementById("username").value;
@@ -239,12 +309,15 @@ export default class Court extends React.Component {
                    },
           body: JSON.stringify({})
       };
-      fetch('auth', requestOptions)
+      fetch('auth', requestOptions) // Calling the authentication server
           .then(response => {if(response.status == 200) this.successfulLogin(response);
                                                         else throw new Error(JSON.stringify(response.body))})
           .catch(e=>{this.failedLogin(e)});
   }
 
+  /* Handles successful login and assigns the security token in order to supply it with other requests.
+  * Here we also start tracing the mouse movements. Attention! The Login button becomes a Logoff button
+  * which enables me to reuse the space with this toggling mechanism */
   successfulLogin(response) {
     this.setState({"SecurityToken" : response.headers.get("security-token")});
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
@@ -258,10 +331,24 @@ export default class Court extends React.Component {
         "LoggedIn": true
     });
     this.lw.style.display="none";
+
+      // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
+    const handleMouseMove = (event) => {
+
+        let xy=this.getMousePos(this.canvas, event);
+
+        const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
+        const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
+
+        if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
+
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
   };
 
+  // Handle the non 200 response from the authentication service
   failedLogin(e) {
-      console.log("Login failed:"+e);
       this.setState({
           "LoggedIn": false
       });
@@ -274,11 +361,9 @@ export default class Court extends React.Component {
           this.statusBar["font-weight"] = "normal";
           this.statusBar.innerHTML = "Please, click the Login button to access the system";
       }, "3400");
-
-
   }
 
-
+// Getting mouse position on the canvas as {x,y} json
   getMousePos(canvas, evt) {
     this.aw.style.display = "none";
 
@@ -292,7 +377,8 @@ export default class Court extends React.Component {
     }
   }
 
-
+  // Creates most of the form used in the application and most of them are invisible until
+  // called
   componentDidMount() {
       this.canvas = document.getElementById("myCanvas");
       this.statusBar = document.getElementById("statusBar");
@@ -308,28 +394,31 @@ export default class Court extends React.Component {
       this.ctx = this.canvas.getContext("2d");
       drawACourt(this.ctx);
 
-
-      const handleMouseMove = (event) => {
-
-         let xy=this.getMousePos(this.canvas, event);
-
-         const enclosedX = xy.x >=0 && xy.x <=590 ? Math.round(xy.x) : "Out";
-         const enclosedY = xy.y >=70 && xy.y <=1095 ? Math.round(xy.y) : "Out";
-
-         if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
-
-      };
-
       const handleResize = () => {
           this.xOffset = this.canvas.offsetLeft;
           this.yOffset = this.canvas.offsetTop;
       }
 
-      window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('resize', handleResize);
   }
 
-  render() {
+  /* returns true if the given coordinates are too close to the net */
+  isInsideDmz(x, y) {
+      return x > this.X_DMZ_TOP_LEFT_COORD && x < this.X_DMZ_BOTTOM_RIGHT_COORD &&
+             y < this.Y_DMZ_BOTTOM_RIGHT_COORD && y > this.Y_DMZ_TOP_LEFT_COORD;
+  }
+
+  /* returns true if the given X coordinates is outside the tennis court */
+  isXOutsideCourt(x) {
+      return x > this.X_COURT_MAX_COORD || x < this.X_COURT_MIN_COORD;
+  }
+
+  /* returns true if the given X coordinates is outside the tennis court */
+  isYOutsideCourt(y) {
+      return y > this.Y_COURT_MAX_COORD || y < this.Y_COURT_MIN_COORD;
+  }
+
+    render() {
     return (
         <div id="motherPanel" className="center" height="1300" width="700">
           <div id="controlPanel">
