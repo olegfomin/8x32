@@ -8,30 +8,10 @@ import AboutWindow from "./AboutWindow";
 // import RoverWindow from "./RoverWindow";
 import TennisBallWindow from "./TennisBallWindow";
 import {Buffer} from 'buffer';
+import RouteMaker from "./RouteMaker";
 
 
 export default class Court extends React.Component {
-    ON_SAME_SIDE      = 0;
-    ON_OPPOSITE_SIDES = 1;
-    ON_CORRIDOR_LEFT  = 2;
-    ON_CORRIDOR_RIGHT = 3;
-
-    X_COURT_MAX_COORD = 590;
-    Y_COURT_MAX_COORD = 1095;
-    X_COURT_MIN_COORD = 0;
-    Y_COURT_MIN_COORD = 70;
-
-    Y_NET_COORDINATE       = 544;
-    X_LEFT_CORRIDOR_LEFT   =  8;
-    X_LEFT_CORRIDOR_RIGHT  =  64;
-    X_LEFT_CORRIDOR_MEDiAN = (this.X_LEFT_CORRIDOR_RIGHT+this.X_LEFT_CORRIDOR_LEFT)/2;
-    X_RIGHT_CORRIDOR_LEFT  =  520;
-    X_RIGHT_CORRIDOR_RIGHT = 575;
-    X_RIGHT_CORRIDOR_MEDIAN= (this.X_RIGHT_CORRIDOR_LEFT+this.X_RIGHT_CORRIDOR_RIGHT)/2;
-    CORRIDOR_LENGTH        = 46;
-    CORRIDOR_BOTTOM_Y      = this.Y_NET_COORDINATE + this.CORRIDOR_LENGTH/2;
-    CORRIDOR_TOP_Y         = this.Y_NET_COORDINATE - this.CORRIDOR_LENGTH/2;
-    X_MEDIAN_LINE          = 292;
     X_DMZ_TOP_LEFT_COORD   = 70;
     Y_DMZ_TOP_LEFT_COORD   = 524;
     X_DMZ_BOTTOM_RIGHT_COORD = 500;
@@ -47,6 +27,7 @@ export default class Court extends React.Component {
         this.xOffset = 0; // Temporary setting/declaring this variable to zero they will take their correct value
         this.yOffset = 0; // when component mounts
 
+        this.routeMaker = new RouteMaker(this);
         this.handleLoginCallback = this.handleLoginCallback.bind(this);
         this.handleAboutClick = this.handleAboutClick.bind(this);
         this.handleLoginClick = this.handleLoginClick.bind(this);
@@ -83,6 +64,7 @@ export default class Court extends React.Component {
             "ConnectionInProcess": false, // The connection with rover's being established
             "isConnected": false, // The connection with a rover has been established
             "EditInProcess": false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
+            "isValidSpace": false,
             Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -117,78 +99,26 @@ export default class Court extends React.Component {
     }
 
 // This handler would move the picture of the rover towards the point where the mouse
-// was clicked on
+// was clicked on. It may become a route of several vectors if the current position of the rover is
+// located on the opposite side of the net
     handleClick(event) {
         if (this.state.isConnected) { // Rover should move now
-            let xy = this.getMousePos(this.canvas, event);
-
-//            const route = this.routeBuilder(xy.x, xy.y);
-
-//            console.log("route x1="+route[0].x1+" x2="+route[0].x2+" y1="+route[0].y1+" y2="+route[0].y2);
-
-            const route = [];
-            route.push({"x1":xy.x, "x2":this.state.Current_X, "y1":xy.y, "y2":this.state.Current_Y});
-
-            for(let i=0; i < route.length; i++) {
-                const vector = route[i];
-                const offsetX = vector.x1 - vector.x2;
-                const offsetY = vector.y1 - vector.y2;
-                const stepX = offsetX / 20.0;
-                const stepY = offsetY / 20.0;
-
-                this.redrawPicture(xy.x, xy.y);
-                let counter = 0;
-
-                const intervalId = setInterval(() => {
-                    this.setState({Current_X: this.state.Current_X + stepX});
-                    this.setState({Current_Y: this.state.Current_Y + stepY});
-
-                    this.redrawPicture(this.state.Current_X, this.state.Current_Y);
-
-                    if (counter == 20) {
-                        clearInterval(intervalId);
-                        return;
-                    }
-                    counter++;
-
-                }, 50);
-
+            if(this.state.isValidSpace) {
+                let xy = this.getMousePos(this.canvas, event);
+                this.routeMaker.handleClick(this.state.Current_X, this.state.Current_Y, xy.x, xy.y);
+            } else {
+                this.statusBar.innerHTML = "The invalid target position. Please move cursor";
+                setTimeout(()=> {
+                    this.statusBar.innerHTML = "";
+                }, 3000);
             }
-        };
-    };
-
-    // The function returns 0 if both current and target Y belong to the same part of the court
-    // The function returns 1 if the current and target sides are on the different sides of the court
-    // it renders 2 if the target is on the left corridor
-    // and it returns 3 it the target belongs to the right corridor
-    findSides(currentX, currentY, targetX, targetY) {
-        if((currentY < this.CORRIDOR_TOP_Y && targetY < this.CORRIDOR_TOP_Y) ||
-           (currentY > this.CORRIDOR_BOTTOM_Y && targetY > this.CORRIDOR_BOTTOM_Y)) return this.ON_SAME_SIDE;
-
-
-        if((currentY < this.CORRIDOR_TOP_Y && targetY > this.CORRIDOR_BOTTOM_Y) ||
-           (currentY > this.CORRIDOR_BOTTOM_Y && targetY < this.CORRIDOR_TOP_Y)) return this.ON_OPPOSITE_SIDES;
-
-        return targetX > this.X_MEDIAN_LINE ? this.ON_CORRIDOR_RIGHT : this.ON_CORRIDOR_LEFT;
-
-    }
-
-    // Builds the route from point A(x, y) to point B(x, y). The input is a target's x and y. The output
-    // is an array of intermediate x and y like that [{x1,x2,y1,y2}, {x1,x2,y1,y2}]
-    routeBuilder(targetX, targetY) {
-        this.setState({"Target_X": targetX});
-        this.setState({"Target_Y": targetY});
-
-        const changingSides = this.findSides(this.state.Current_X, this.state.Current_Y,
-                                             this.state.Target_X, this.state.Target_Y);
-        const route = [];
-        switch (changingSides) {
-            case this.ON_SAME_SIDE: route.push({"x1": this.state.Current_X, "x2": this.state.Target_X,
-                                                "y1": this.state.Current_Y, "y2": this.state.Target_Y}); break;
-            default: throw Error("Other cases not implemented yet");
+        } else {
+            this.statusBar.innerHTML = "The device has not been connected yet";
+            setTimeout(()=> {
+                this.statusBar.innerHTML = "You can try once more";
+            }, 3000);
         }
 
-        return route;
     }
 
     handleLoginClick(event) {
@@ -339,6 +269,8 @@ export default class Court extends React.Component {
 
         const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
         const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
+        if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
+        else this.setState({isValidSpace: true});
 
         if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
 
