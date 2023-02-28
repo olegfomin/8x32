@@ -40,6 +40,8 @@ export default class RouteMaker {
 
     }
 
+    /* Traversing the array of dots that represent the list of vectors being the route's rover. This path is
+    *  rendered to the screen as a black circle wih capital R inside that is moving along the path  */
     recursiveCallbackHandler(error, data) {
         if(error == null) {
             let x1 = this.x2;

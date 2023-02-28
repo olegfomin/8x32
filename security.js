@@ -58,7 +58,10 @@ class Authentication {
 
     mkUser(callerToken, userName, password) {
        const callerName = this.token2UserNameMap[callerToken];
-       if(callerName != "admin") throw new Error("You must be an 'admin' to create new users");
+       if((callerName != null || callerName != undefined) && callerName != "admin") throw new Error("You must be an 'admin' to create new users");
+       const currentDate = Date.now();
+       const callerTokenDate = this.token2DateMap[callerToken];
+       if((callerTokenDate !=null || callerTokenDate != undefined) && currentDate > callerTokenDate) throw new Error("'admin' token is expired");
        const buff = new Buffer(password);
        const base64data = buff.toString('base64');
        this.userName2PasswordMap[userName]=base64data;
