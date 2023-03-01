@@ -224,31 +224,81 @@ export default class Court extends React.Component {
         }
     };
 
+  heartBeat() {
+    const heartBeatAgentId = setInterval( () => {
+        const requestOptions = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json',
+                'Content-Length': '2',
+                'Accept': '*/*',
+                'security-token': this.state.SecurityToken
+            },
+            body: JSON.stringify({})
+        };
+        fetch('heart-beat', requestOptions) // Calling the authentication server
+            .then(response => {if(response.status != 200) throw new Error(JSON.stringify(response.body))})
+            .catch(e=>{this.failedLogin(e)});
+    }, 60*1000);
+
+    this.setState({"HeartBeatAgentId": heartBeatAgentId});
+  }
+
   /* Handles the tap on the "Submit" button on the Login screen */
   handleLoginCallback(event) {
     event.preventDefault();
-    const userName = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const encodedString = Buffer.from(`${userName}:${password}`).toString('base64');
-    const requestOptions = {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json',
-                     'Content-Length': '2',
-                     'Accept': '*/*',
-                     'authorization': 'Basic '+encodedString
-                   },
-          body: JSON.stringify({})
-      };
-      fetch('auth', requestOptions) // Calling the authentication server
-          .then(response => {if(response.status == 200) this.successfulLogin(response);
-                                                        else throw new Error(JSON.stringify(response.body))})
-          .catch(e=>{this.failedLogin(e)});
+    if(!this.state.LoggedIn) { // The application is in logoff state right now and it is needed to get logged in
+        const userName = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const encodedString = Buffer.from(`${userName}:${password}`).toString('base64');
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': '2',
+                'Accept': '*/*',
+                'authorization': 'Basic ' + encodedString
+            },
+            body: JSON.stringify({})
+        };
+        fetch('auth', requestOptions) // Calling the authentication server
+            .then(response => {
+                if (response.status == 200) this.successfulLogin(response);
+                else throw new Error(JSON.stringify(response.body))
+            })
+            .catch(e => {
+                this.failedLogin(e)
+            });
+    } else {
+        // Logoff here because the system is logged in already presumably
+        // first off all lets switch off the heart beat
+        if(this.state.HeartBeatAgentId != null && this.state.HeartBeatAgentId != undefined) clearInterval(this.state.HeartBeatAgentId);
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': '2',
+                'Accept': '*/*',
+                'security-token':+""+this.state.SecurityToken
+            },
+            body: JSON.stringify({})
+        };
+        fetch('logoff', requestOptions) // Calling the authentication server
+            .then(response => {
+                if (response.status == 200) this.successfulLogin(response);
+                else throw new Error(JSON.stringify(response.body))
+            })
+            .catch(e => {
+                this.failedLogin(e)
+            });
+
+    }
   }
 
   /* Handles successful login and assigns the security token in order to supply it with other requests.
   * Here we also start tracing the mouse movements. Attention! The Login button becomes a Logoff button
   * which enables me to reuse the space with this toggling mechanism */
   successfulLogin(response) {
+    this.heartBeat();
     this.setState({"SecurityToken" : response.headers.get("security-token")});
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
 
