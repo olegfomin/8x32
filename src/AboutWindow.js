@@ -9,20 +9,31 @@ export default class AboutWindow extends React.Component {
             <div id="AboutWindow">
               <form>
                 <div>
-                    <div id="UpfrontImage" src="./images/UpfrontView.png"></div>
-                    <p>This web-site contains information, data, settings and it can control a universal four wheeled chassis.
-                    This device is going to become autonomous but you can also control this machine from this web-site.
-                    The author of this site can see a lot of applications for this apparatus starting from being a tennis-court
-                    janitor, then it can be a tennis ball picker and at the very peak of its development it can be an avid
-                    a tennis player that can successfully compete with the humans in a game of tennis. Though it is started
-                    as a tennis court application the all terrain automated cart may also finds its application in other
-                    type of games or become a decoy for a hunting game where the hunters a trying to aim at the artifact
-                    rather than target a life animal. This chassis can also be useful in the construction industry and
-                    other types of applications. The only thing where the author of this site does NOT want this frame to
-                    be used is a military operations. Never I can see any real terminal weapon I can see mounted on top
-                    of the invention. Where I am still hesitating is the mine fields defusing operation where this robot
-                    can be really useful about and it can safe lives and health of people on the other hand it can also
-                        facilitate more rapid motion and deployment of the armed forces.</p>
+                    <ul>
+                        <li>This web page explains how to control 'Robotic Rover' remotely</li>
+                        <li>While this chassis can be used anywhere. It will be tested on the tennis court</li>
+                        <li>This robot is going to be equipped with accessories that would allow
+                            <ul>
+                                <li>Collecting the fallen tennis balls</li>
+                                <li>Vacuum cleaning the tennis courts</li>
+                                <li>Play the tennis like a real player does</li>
+                            </ul>
+                        </li>
+                        <li>To start the process, you will have to 'Login' first</li>
+                        <li>If you do not have an account please send us an email</li>
+                        <li>The e-mail is admin@roboticrover.com</li>
+                        <li>After you logged in you can go to "Settings" or "Calibration"</li>
+                        <li>However if just want to control the rover than click "Start" button on the right</li>
+                        <li>In the bottom middle part of the court you shall see the circle with the button R in centre</li>
+                        <li>On the upper left of the court you will see X and Y coordinates changing as you move your mouse</li>
+                        <li>Click at any valid position on green part of the court (not too close to the net)</li>
+                        <li>The grey circle will start moving towards the target you identified</li>
+                        <li>(Not implemented yet!) Following the grey circle the black circle will start moving</li>
+                        <li>The gray circle represents the desirable position of the rover</li>
+                        <li>(Not implemented yet) The black rover will be chasing the grey circle</li>
+                        <li>When you are finished with the system please press "Logoff" or close the browser</li>
+                        <li>If you do not logoff your session will never expire </li>
+                    </ul>
                 </div>
                 <button id="aboutSubmitButton" onClick={this.props.handleAboutSubmitClick}>Ok</button>
               </form>

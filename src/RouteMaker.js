@@ -4,6 +4,8 @@ import Court from "./Court";
 * a net across the court. Meaning that if the given points are located on the opposite sides of the court the rover go
 * around the net not trying to go through it
 *
+* TODO: ATTENTION: There is some defect here allowing to jump the rover over the net if it gets close to it
+*
 * All rights belong to www.roboticrover.com
 *  */
 export default class RouteMaker {
@@ -96,14 +98,28 @@ export default class RouteMaker {
     // it renders 2 if the target is on the left corridor
     // and it returns 3 it the target belongs to the right corridor
     findSides(startX, startY, endX, endY) {
-        if((startY > this.CORRIDOR_TOP_Y && endY > this.CORRIDOR_TOP_Y) ||
-            (startY < this.CORRIDOR_BOTTOM_Y && endY < this.CORRIDOR_BOTTOM_Y)) return this.ON_SAME_SIDE;
+        if(((startY > this.Y_NET_COORDINATE && endY > this.Y_NET_COORDINATE) ||
+           (startY < this.Y_NET_COORDINATE && endY < this.Y_NET_COORDINATE)))
+        return this.ON_SAME_SIDE; // On the same side
+
+        if(((startY > this.Y_NET_COORDINATE && endY < this.Y_NET_COORDINATE) ||
+            (startY < this.Y_NET_COORDINATE && endY > this.Y_NET_COORDINATE)) &&
+            ((startX > this.X_LEFT_CORRIDOR_RIGHT && endX < this.X_RIGHT_CORRIDOR_LEFT) ||
+             (endX > this.X_LEFT_CORRIDOR_RIGHT && startX < this.X_RIGHT_CORRIDOR_LEFT)))
+        return this.ON_OPPOSITE_SIDES; // On opposite and divided by net
+
+        if(((startY >  this.Y_NET_COORDINATE && endY < this.Y_NET_COORDINATE) ||
+            (startY <  this.Y_NET_COORDINATE && endY > this.Y_NET_COORDINATE)) &&
+            (startX <  this.X_LEFT_CORRIDOR_RIGHT && endX < this.X_LEFT_CORRIDOR_RIGHT))
+        return this.ON_CORRIDOR_LEFT; // On the left corridor
+
+        if(((startY >  this.Y_NET_COORDINATE && endY < this.Y_NET_COORDINATE) ||
+                (startY <  this.Y_NET_COORDINATE && endY > this.Y_NET_COORDINATE)) &&
+            (startX >  this.X_RIGHT_CORRIDOR_LEFT && endX > this.X_RIGHT_CORRIDOR_LEFT))
+            return this.ON_CORRIDOR_RIGHT; // On the right corridor
 
 
-        if((startY > this.CORRIDOR_BOTTOM_Y && endY < this.CORRIDOR_TOP_Y) ||
-            (startY < this.CORRIDOR_TOP_Y && endY > this.CORRIDOR_BOTTOM_Y)) return this.ON_OPPOSITE_SIDES;
-
-        return endX > this.X_MEDIAN_LINE ? this.ON_CORRIDOR_RIGHT : this.ON_CORRIDOR_LEFT;
+        return "CANNOT_FIGURE_OUT_POSITION";
 
     }
 
@@ -124,6 +140,18 @@ export default class RouteMaker {
                 this.X_RIGHT_CORRIDOR_MEDIAN, this.CORRIDOR_TOP_Y,
                 endX, endY
             ) ; break;
+
+            case this.ON_CORRIDOR_LEFT: route.push({"x": startX, "y": startY});
+                                        route.push({"x": this.X_LEFT_CORRIDOR_MEDiAN, "y":startY});
+                                        route.push({"x": this.X_LEFT_CORRIDOR_MEDiAN, "y" :endY});
+                                        route.push({"x": endX, "y": endY});
+                                        break;
+
+            case this.ON_CORRIDOR_RIGHT: route.push({"x": startX, "y": startY});
+                                         route.push({"x": this.X_RIGHT_CORRIDOR_MEDIAN, "y":startY});
+                                         route.push({"x": this.X_RIGHT_CORRIDOR_MEDIAN, "y":endY});
+                                         route.push({"x": endX, "y": endY});
+                                         break;
 
             default: throw Error("Other cases not implemented yet");
         }

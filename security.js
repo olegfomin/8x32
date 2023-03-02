@@ -61,11 +61,12 @@ class Authentication {
     // Validating that the token is still valid and labels it with a new time so it ain't gonna expire
     validateAndRefresh(token) {
         const tokenDate = this.token2DateMap[token];
-        if (tokenDate == null || tokenDate == undefined) throw new Error("Token is invalid");
+        if (tokenDate == null || tokenDate == undefined) throw new Error(`Provided Token ${token} is invalid`);
         const currentTime = Date.now();
-        if (tokenDate) throw new Error("Token is expired");
+        if (tokenDate < currentTime) throw new Error(`The token ${token} is expired`);
         this.token2DateMap[token] = currentTime+this.SESSION_DURATION;
         const username = this.token2UserNameMap[token];
+        if(username==null || username==undefined) throw new Error(`The provided Token ${token} is invalid`);
         console.log(`The ${username} has reconfirmed its heart beat` )
     }
 

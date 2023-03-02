@@ -86,7 +86,7 @@ export default class Court extends React.Component {
         this.ctx.beginPath();  //start the path
         this.ctx.arc(x, y, 12, 0, Math.PI * 2); //draw the circle
         this.ctx.fill();
-        this.ctx.fillStyle = "black";
+        this.ctx.fillStyle = "gray";
         this.ctx.beginPath();  //start the path
         this.ctx.arc(x, y, 10, 0, Math.PI * 2); //draw the circle
         this.ctx.fill();
@@ -124,6 +124,7 @@ export default class Court extends React.Component {
     handleLoginClick(event) {
         const lb = document.getElementById("loginButton");
         if (!this.state.LoggedIn) {
+            drawACourt(this.ctx); // Removing "Robotic Rover Control Panel" on the first click
             window.scrollTo(0, 0);
             this.lw.style.display = "inherit";
         } else {
@@ -217,6 +218,21 @@ export default class Court extends React.Component {
                 }, "2500");
                 this.setState({"Current_X": this.state.Home_X});
                 this.setState({"Current_Y": this.state.Home_Y});
+                // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
+                const handleMouseMove = (event) => {
+
+                    let xy=this.getMousePos(this.canvas, event);
+
+                    const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
+                    const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
+                    if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
+                    else this.setState({isValidSpace: true});
+
+                    if(this.state.LoggedIn && this.state.isConnected) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
+
+                };
+                window.addEventListener('mousemove', handleMouseMove);
+
                 this.statusBar.innerHTML = "Point the area where the rover must go";
                 window.scrollTo(0, 500); // Rolling the scroller to the end
             }
@@ -243,14 +259,16 @@ export default class Court extends React.Component {
     this.setState({"HeartBeatAgentId": heartBeatAgentId});
   }
 
-  /* Handles the tap on the "Submit" button on the Login screen */
+  /* Handles the tap on the "Submit" button on the Login screen. This is quite complex method that works as a
+  * toggle switch thus if you are logged off then this button serves as LoginButton otherwise if you are
+  * already logged-in than you shall logout of the system */
   handleLoginCallback(event) {
     event.preventDefault();
     if(!this.state.LoggedIn) { // The application is in logoff state right now and it is needed to get logged in
         const userName = document.getElementById("username").value;
         const password = document.getElementById("password").value;
         const encodedString = Buffer.from(`${userName}:${password}`).toString('base64');
-        const requestOptions = {
+        const requestOptions = { // TODO it seems like all communication pieces must be moved into a separate class
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -284,7 +302,10 @@ export default class Court extends React.Component {
         };
         fetch('logoff', requestOptions) // Calling the authentication server
             .then(response => {
-                if (response.status == 200) this.successfulLogin(response);
+                if (response.status == 200) {
+                    this.statusBar.innerHTML = "You have successfully logged off the system";
+                    setTimeout(()=>{this.statusBar.innerHTML = "You may login again"}, 5000);
+                }
                 else throw new Error(JSON.stringify(response.body))
             })
             .catch(e => {
@@ -311,22 +332,6 @@ export default class Court extends React.Component {
         "LoggedIn": true
     });
     this.lw.style.display="none";
-
-      // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
-    const handleMouseMove = (event) => {
-
-        let xy=this.getMousePos(this.canvas, event);
-
-        const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
-        const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
-        if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
-        else this.setState({isValidSpace: true});
-
-        if(this.state.LoggedIn) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
-
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-
   };
 
   // Handle the non 200 response from the authentication service
@@ -374,7 +379,11 @@ export default class Court extends React.Component {
       this.yOffset = this.canvas.offsetTop;
 
       this.ctx = this.canvas.getContext("2d");
+
       drawACourt(this.ctx);
+      this.ctx.fillStyle = "black";
+      this.ctx.font = "30px Arial";
+      this.ctx.fillText("Robotic Rover Control Panel",95,120); // This will disappear as soon as any activities on the court like moving a robot start
 
       const handleResize = () => {
           this.xOffset = this.canvas.offsetLeft;
@@ -392,12 +401,12 @@ export default class Court extends React.Component {
 
   /* returns true if the given X coordinates is outside the tennis court */
   isXOutsideCourt(x) {
-      return x > this.X_COURT_MAX_COORD || x < this.X_COURT_MIN_COORD;
+      return x < this.X_COURT_MAX_COORD || x > this.X_COURT_MIN_COORD;
   }
 
   /* returns true if the given X coordinates is outside the tennis court */
   isYOutsideCourt(y) {
-      return y > this.Y_COURT_MAX_COORD || y < this.Y_COURT_MIN_COORD;
+      return y < this.Y_COURT_MAX_COORD || y > this.Y_COURT_MIN_COORD;
   }
 
     render() {

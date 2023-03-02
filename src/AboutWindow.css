@@ -3,8 +3,8 @@
     top: -1350px;
 
     margin-left: 100px;
-    width: 500px;
-    height: 840px;
+    width: 550px;
+    height: 700px;
     border-style: double;
     border-color: yellow;
     color: yellow;
@@ -16,13 +16,15 @@
 #aboutSubmitButton {
     height: 34px;
     width: 89px;
-    margin-left: 195px;
-    margin-top: 5px;
+    margin-left: 200px;
+    margin-top: 20px;
 }
 
 #UpfrontImage {
-    margin: auto;
-    height: 380px;
-    width: 440px;
+    display: block;
+    margin-right: 10px;
+    height: 120px;
+    width: 120px;
+    background-size: 115px 115px;
     background-image: url("./images/UpfrontView.png");
 }

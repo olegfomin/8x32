@@ -39,6 +39,11 @@ app.post('/auth', function(request, response) {
 
 app.put("/heart-beat", function(request, response) {
     const securityToken = request.headers["security-token"];
+    if(securityToken==undefined || securityToken==null) {
+        response.status(401);
+        response.send({"reason":"No security token found in a message"});
+        return;
+    }
     authentication.validateAndRefresh(securityToken);
     response.status(200);
     response.send({"status":"Accepted"});
