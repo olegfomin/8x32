@@ -9,9 +9,10 @@ import AboutWindow from "./AboutWindow";
 import TennisBallWindow from "./TennisBallWindow";
 import {Buffer} from 'buffer';
 import RouteMaker from "./RouteMaker";
-
+import ControlPanel from "./ControlPanel";
 
 export default class Court extends React.Component {
+    BASE_URL = "ws://www.roboticrover.com:5000/"
     X_DMZ_TOP_LEFT_COORD   = 70;
     Y_DMZ_TOP_LEFT_COORD   = 524;
     X_DMZ_BOTTOM_RIGHT_COORD = 500;
@@ -21,6 +22,7 @@ export default class Court extends React.Component {
     statusBar;
     lw;
     cw;
+    webSocket;
 
     constructor(props) {
         super(props);
@@ -41,6 +43,8 @@ export default class Court extends React.Component {
         this.redrawPicture = this.redrawPicture.bind(this);
         this.successfulLogin = this.successfulLogin.bind(this);
         this.failedLogin = this.failedLogin.bind(this);
+        this.showInfoMessage = this.showInfoMessage.bind(this);
+        this.showErrorMessage = this.showErrorMessage.bind(this);
         this.state = {
             "LoggedIn": false,
             "SecurityToken": null,
@@ -53,18 +57,16 @@ export default class Court extends React.Component {
             "Current_Y": 946,
             "Target_X": 400,
             "Target_Y": 1120,
-            "Reachable_Rect_X_From": 444,
-            "Reachable_Rect_Y_from": 700,
-            "Reachable_Rect_X_to": 444,
-            "Reachable_Rect_Y_to": 700,
             "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
             "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
             "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
-            "GameStarted": false, // Here all the buttons must be disabled even logoff so that the rover is not controlled
             "ConnectionInProcess": false, // The connection with rover's being established
             "isConnected": false, // The connection with a rover has been established
             "EditInProcess": false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
             "isValidSpace": false,
+            "isConnected2Socket": false,
+            "wsConnected": false,
+            "wsLoggedIn": false,
             Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,6 +79,29 @@ export default class Court extends React.Component {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
         };
 
+    }
+
+    showInfoMessage(msg) {
+        const messageBefore = this.statusBar.innerHTML;
+        this.statusBar.style.color = "black";
+        this.statusBar["font-weight"] = "normal";
+        this.statusBar.innerHTML = msg;
+
+        setTimeout(() => {
+            this.statusBar.innerHTML = messageBefore;
+        }, "3500");
+    }
+
+    showErrorMessage(msg) {
+        const messageBefore = this.statusBar.innerHTML;
+        this.statusBar.style.color = "red";
+        this.statusBar["font-weight"] = "bold";
+        this.statusBar.innerHTML = msg;
+        setTimeout(() => {
+            this.statusBar.style.color = "black";
+            this.statusBar["font-weight"] = "normal";
+            this.statusBar.innerHTML = messageBefore;
+        }, "3500");
     }
 
     // Redraws the entire picture of the court with the 'Rover' circle in the new place
@@ -107,16 +132,10 @@ export default class Court extends React.Component {
                 let xy = this.getMousePos(this.canvas, event);
                 this.routeMaker.handleClick(this.state.Current_X, this.state.Current_Y, xy.x, xy.y);
             } else {
-                this.statusBar.innerHTML = "The invalid target position. Please move cursor";
-                setTimeout(()=> {
-                    this.statusBar.innerHTML = "";
-                }, 3000);
+                this.showErrorMessage("The invalid target position. Please move cursor");
             }
         } else {
-            this.statusBar.innerHTML = "The device has not been connected yet";
-            setTimeout(()=> {
-                this.statusBar.innerHTML = "You can try once more";
-            }, 3000);
+            this.showInfoMessage("The device has NOT been connected yet");
         }
 
     }
@@ -146,7 +165,6 @@ export default class Court extends React.Component {
     }
 
 // Settings form completed
-
     handleSettingsSubmitClick(event) {
         event.preventDefault();
         const sw = document.getElementById("SettingsWindow");
@@ -188,59 +206,60 @@ export default class Court extends React.Component {
         this.setState({"EditInProcess": false});
 
     }
-
+// This is a flip-flop button that originally has a 'Start' label but as soon as connection with the device is
+// established it'll become 'Stop' button.
     handleStartClick(event) {
-//      this.redrawPicture(this.state.Current_X-this.xOffset, this.state.Current_Y-this.yOffset);
-        if (this.state.isConnected) { // If it is already connected then disconnect the rover
-            this.startButton.innerHTML = "Disconnect...";
-            setTimeout(() => {
-                this.startButton.style.color = "black";
-                this.startButton["font-weight"] = "normal";
-                this.startButton.innerHTML = "Start";
-                this.setState({"GameStarted": false});
-                this.setState({"ConnectionInProcess": false});
-                this.setState({"isConnected": false});
-            }, "1500");
+        if(this.state.isConnected) { // If it is already connected then disconnect the rover
+            this.showInfoMessage("Disconnecting ...");
+            this.setState({"ConnectionInProcess": false});
+            this.setState({"isConnected": false});
             this.setState({"Current_X": this.state.Home_X});
             this.setState({"Current_Y": this.state.Home_Y});
             drawACourt(this.ctx);
         } else { // if the rover connecting the fun begins
-            if (!this.state.ConnectionInProcess) {
-                this.setState({"connectionInProcess": true});
-                this.startButton.innerHTML = "Connect...";
-                setTimeout(() => {
-                    this.startButton.style.color = "red";
-                    this.startButton["font-weight"] = "bold";
-                    this.startButton.innerHTML = "Stop";
-                    this.setState({"GameStarted": true});
+            const socket = new WebSocket(this.BASE_URL+"wslogin",'ws');
+            socket.onopen = (e) => {
+                console.log("Connected to web-socket "+event.data);
+                socket.send(this.state.SecurityToken);
+                this.setState({"ConnectionInProcess": true});
+            };
+
+            socket.onmessage = (event) => {
+                if(this.state.ConnectionInProcess && event.data.startsWith("Success")) {
+                    this.startButton.innerHTML = "Disconnect";
+
+                    this.showInfoMessage("Connected ...");
                     this.setState({"ConnectionInProcess": false});
                     this.setState({"isConnected": true});
-                }, "2500");
-                this.setState({"Current_X": this.state.Home_X});
-                this.setState({"Current_Y": this.state.Home_Y});
-                // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
-                const handleMouseMove = (event) => {
+                    this.setState({"Current_X": this.state.Home_X});
+                    this.setState({"Current_Y": this.state.Home_Y});
+                    // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
+                    const handleMouseMove = (event) => {
 
-                    let xy=this.getMousePos(this.canvas, event);
+                        let xy=this.getMousePos(this.canvas, event);
 
-                    const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
-                    const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
-                    if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
-                    else this.setState({isValidSpace: true});
+                        const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
+                        const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
+                        if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
+                        else this.setState({isValidSpace: true});
 
-                    if(this.state.LoggedIn && this.state.isConnected) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
+                        if(this.state.LoggedIn && this.state.isConnected) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
 
-                };
-                window.addEventListener('mousemove', handleMouseMove);
+                    };
+                    window.addEventListener('mousemove', handleMouseMove);
 
-                this.statusBar.innerHTML = "Point the area where the rover must go";
-                window.scrollTo(0, 500); // Rolling the scroller to the end
-            }
-            this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+                    this.statusBar.innerHTML = "Point the area where the rover must go";
+                    window.scrollTo(0, 500); // Rolling the scroller to the end
+                    this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+                } else {
+                    this.showErrorMessage("Cannot Connect "+event.data);
+                }
+            };
         }
     };
 
   heartBeat() {
+    console.log("Heart-beat");
     const heartBeatAgentId = setInterval( () => {
         const requestOptions = {
             method: 'PUT',
@@ -401,25 +420,25 @@ export default class Court extends React.Component {
 
   /* returns true if the given X coordinates is outside the tennis court */
   isXOutsideCourt(x) {
-      return x < this.X_COURT_MAX_COORD || x > this.X_COURT_MIN_COORD;
+      return x > this.routeMaker.X_COURT_MAX_COORD || x < this.routeMaker.X_COURT_MIN_COORD;
   }
 
   /* returns true if the given X coordinates is outside the tennis court */
   isYOutsideCourt(y) {
-      return y < this.Y_COURT_MAX_COORD || y > this.Y_COURT_MIN_COORD;
+      return y > this.routeMaker.Y_COURT_MAX_COORD || y < this.routeMaker.Y_COURT_MIN_COORD;
   }
 
     render() {
     return (
         <div id="motherPanel" className="center" height="1300" width="700">
-          <div id="controlPanel">
-            <button id="loginButton" onClick={this.handleLoginClick} disabled={this.state.EditInProcess || this.state.isConnected}>Login</button>
-            <button id="settingButton" onClick={this.handleSettingsClick} disabled={!this.state.LoggedIn || this.state.EditInProcess || this.state.isConnected}>Settings</button>
-            <button id="calibrationButton" onClick={this.handleCalibrationClick} disabled={!this.state.LoggedIn || this.state.EditInProcess || this.state.isConnected}>Calibration</button>
-            <button id="aboutButton" onClick={this.handleAboutClick} disabled={this.state.EditInProcess || this.state.isConnected}>About</button>
-
-            <button id="startButton" onClick={this.handleStartClick} disabled={!this.state.LoggedIn || this.state.EditInProcess}>Start</button>
-          </div>
+          <ControlPanel connected = {this.state.isConnected}
+                        wsConnected = {this.state.wsConnected}
+                        loginClicked = {this.handleLoginClick}
+                        settingClicked = {this.handleSettingsClick}
+                        calibrationClicked = {this.handleCalibrationClick}
+                        aboutClicked = {this.handleAboutClick}
+                        startClicked = {this.handleStartClick}
+          />
           <div id="statusBar">Please, click the 'Login' button to access the system</div>
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
@@ -435,7 +454,7 @@ export default class Court extends React.Component {
           <CalibrationWindow Speed2DirectionArr={this.state.Speed2DirectionArr}
                              handleCalibrationSubmitClick={this.handleCalibrationSubmitClick}
                              disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
-          <AboutWindow handleAboutSubmitClick={this.handleAboutSubmitClick} disabled={!this.state.LoggedIn}/>
+          <AboutWindow handleAboutClick={this.handleAboutClick} disabled={!this.state.LoggedIn}/>
           <TennisBallWindow visible={false} />
         </div>
     );

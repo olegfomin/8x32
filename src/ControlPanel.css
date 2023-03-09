@@ -1,0 +1,47 @@
+#controlPanel {
+    position: fixed;
+    width: 697px;
+}
+
+#loginButton {
+    float: left;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+
+#logoutButton {
+    float: left;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+
+#settingButton {
+    float: left;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+
+#calibrationButton {
+    float: left;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+
+#aboutButton {
+    float: left;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+
+#startButton {
+    float: right;
+    width: 100px;
+    height: 50px;
+    margin-left: 5px ;
+}
+

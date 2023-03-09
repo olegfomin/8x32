@@ -7,8 +7,14 @@ const Authentication = require("./security");
 const authentication = new Authentication();
 
 const app = express(); // create express app
+const expressWs = require('express-ws')(app); // We use the web-socket here to receive the real robot position coordinates
+                                              // This will make black circle representing the real robot follow the planned one
 
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+
+let wsAuthToken = null; // If null it means no one is controlling device
+let wsUserName = null; // Holding a user name as well. If user left the session without logging off
+let wsDate     = null;
 
 app.use(express.static('build'));
 
@@ -85,6 +91,36 @@ app.get('/user', function(request, response) {
     const listOfUsers = authentication.listUser(securityToken);
     response.status(200);
     response.send(listOfUsers);
+});
+
+app.ws('/wslogin', function(ws, req) {
+    ws.on('message', function(token) {
+        if(wsAuthToken == null) {
+            wsUserName = authentication.token2UserNameMap[token];
+            if(wsUserName != null) {
+                wsDate = Date.now();
+                wsAuthToken = token;
+                console.log("Sent success");
+                ws.send("Success");
+            } else {
+                ws.send("Failure: Invalid security token provided");
+            }
+        } else {
+            if(token == wsAuthToken) {
+                ws.send("Success");
+                wsDate = Date.now();
+            } else {
+                const userNameRetrieved = authentication.token2UserNameMap[token];
+                if(userNameRetrieved === wsUserName) {
+                    wsAuthToken = token;
+                    ws.send("Success");
+                    wsDate = Date.now();
+                } else {
+                    ws.send(`Failure: The device is already used by '${wsUserName}'`);
+                }
+            }
+        }
+    });
 });
 
 
