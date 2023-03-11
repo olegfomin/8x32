@@ -11,7 +11,10 @@ export default class ControlPanel extends React.Component {
             <div id="motherPanel" className="center" height="1300" width="700">
                 <div id="controlPanel">
                     <button id="loginButton" onClick={this.props.loginClicked}
-                            disabled={this.props.EditInProcess}>{this.props.LoggedIn ? "Logoff" : "Login" }
+                            disabled={this.props.EditInProcess}
+                            className={this.props.LoggedIn ? "redBold" : "normal"}
+
+                    > {this.props.LoggedIn ? "Logoff" : "Login" }
                     </button>
                     <button id="settingButton" onClick={this.props.settingClicked}
                             disabled={!this.props.LoggedIn || this.props.EditInProcess}>Settings
@@ -22,7 +25,7 @@ export default class ControlPanel extends React.Component {
                     <button id="aboutButton" onClick={this.props.aboutClicked}
                             disabled={this.props.EditInProcess || this.props.EditInProcess}>About
                     </button>
-                    <button id="startButton" onClick={this.props.handleStartClick}
+                    <button id="startButton" onClick={this.props.startClicked}
                             disabled={!this.props.LoggedIn || this.props.EditInProcess}>
                         {this.props.wsConnected ? "Stop" : "Start"}
                     </button>

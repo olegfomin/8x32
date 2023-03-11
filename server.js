@@ -61,6 +61,7 @@ app.post('/logoff', function(request, response){
         authentication.logoff(securityToken);
         response.status(200);
         response.send({"status":"Logged off"});
+        console.log("User successfully logged off");
      } catch(e) {
         console.log(e);
         response.status(401);

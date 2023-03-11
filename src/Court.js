@@ -145,13 +145,9 @@ export default class Court extends React.Component {
         if (!this.state.LoggedIn) {
             drawACourt(this.ctx); // Removing "Robotic Rover Control Panel" on the first click
             window.scrollTo(0, 0);
-            this.lw.style.display = "inherit";
+            this.lw.style.display = "inherit"; // Making window 'Login' visible
         } else {
             this.lw.style.display = "none";
-            lb.style.color = "black"
-            lb.style.fontWeight = "normal";
-            lb.innerHTML = "Login";
-
             this.setState({"LoggedIn": false});
         }
     }
@@ -160,7 +156,7 @@ export default class Court extends React.Component {
     handleSettingsClick(event) {
         window.scrollTo(0, 0);
         const sw = document.getElementById("SettingsWindow");
-        sw.style.display = "inherit";
+        sw.style.display = "inherit"; // Making Setting window visible
         this.setState({"EditInProcess": true});
     }
 
@@ -179,7 +175,7 @@ export default class Court extends React.Component {
         this.state.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
         this.setState({"EditInProcess": false});
 
-        sw.style.display = "none";
+        sw.style.display = "none"; // Making setting window invisible
     }
 
     handleCalibrationClick(event) {
@@ -209,13 +205,15 @@ export default class Court extends React.Component {
 // This is a flip-flop button that originally has a 'Start' label but as soon as connection with the device is
 // established it'll become 'Stop' button.
     handleStartClick(event) {
-        if(this.state.isConnected) { // If it is already connected then disconnect the rover
+        console.log("handleStartClick = "+event.data+" this.state.wsConnected="+this.state.wsConnected);
+        if(this.state.wsConnected) { // If it is already connected then disconnect the rover
             this.showInfoMessage("Disconnecting ...");
             this.setState({"ConnectionInProcess": false});
             this.setState({"isConnected": false});
             this.setState({"Current_X": this.state.Home_X});
             this.setState({"Current_Y": this.state.Home_Y});
             drawACourt(this.ctx);
+            this.setState({"wsConnected" : false});
         } else { // if the rover connecting the fun begins
             const socket = new WebSocket(this.BASE_URL+"wslogin",'ws');
             socket.onopen = (e) => {
@@ -226,7 +224,7 @@ export default class Court extends React.Component {
 
             socket.onmessage = (event) => {
                 if(this.state.ConnectionInProcess && event.data.startsWith("Success")) {
-                    this.startButton.innerHTML = "Disconnect";
+                    this.setState({wsConnected : true});
 
                     this.showInfoMessage("Connected ...");
                     this.setState({"ConnectionInProcess": false});
@@ -235,16 +233,12 @@ export default class Court extends React.Component {
                     this.setState({"Current_Y": this.state.Home_Y});
                     // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
                     const handleMouseMove = (event) => {
-
                         let xy=this.getMousePos(this.canvas, event);
-
                         const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
                         const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
                         if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
                         else this.setState({isValidSpace: true});
-
                         if(this.state.LoggedIn && this.state.isConnected) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
-
                     };
                     window.addEventListener('mousemove', handleMouseMove);
 
@@ -252,6 +246,7 @@ export default class Court extends React.Component {
                     window.scrollTo(0, 500); // Rolling the scroller to the end
                     this.redrawPicture(this.state.Current_X, this.state.Current_Y);
                 } else {
+                    this.setState({wsConnected : false});
                     this.showErrorMessage("Cannot Connect "+event.data);
                 }
             };
@@ -342,14 +337,10 @@ export default class Court extends React.Component {
     this.setState({"SecurityToken" : response.headers.get("security-token")});
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
 
-    const lb = document.getElementById("loginButton");
-
-    lb.style.color = "red";
-    lb.style["font-weight"] = "bold";
-    lb.innerHTML = "Logoff";
     this.setState({
-        "LoggedIn": true
+         "LoggedIn": true
     });
+
     this.lw.style.display="none";
   };
 
@@ -392,6 +383,7 @@ export default class Court extends React.Component {
       this.aw = document.getElementById("AboutWindow");
       this.startButton = document.getElementById("startButton");
       this.lw = document.getElementById("loginWindow");
+      const lb = document.getElementById("loginButton");
 
 
       this.xOffset = this.canvas.offsetLeft;
@@ -431,7 +423,9 @@ export default class Court extends React.Component {
     render() {
     return (
         <div id="motherPanel" className="center" height="1300" width="700">
-          <ControlPanel connected = {this.state.isConnected}
+          <ControlPanel EditInProcess = {this.state.EditInProcess}
+                        LoggedIn = {this.state.LoggedIn}
+                        connected = {this.state.isConnected}
                         wsConnected = {this.state.wsConnected}
                         loginClicked = {this.handleLoginClick}
                         settingClicked = {this.handleSettingsClick}

@@ -90,6 +90,16 @@
   margin: 8px;
 }
 
+.redBold {
+  color: red;
+  font-weight: bold;
+}
+
+.normal {
+  color: black;
+  font-weight: normal;
+}
+
 
 
 
