@@ -3,8 +3,8 @@
     top: -1350px;
 
     margin-left: 150px;
-    width: 400px;
-    height: 350px;
+    width: 500px;
+    height: 900px;
     border-style: double;
     border-color: yellow;
     background-color: darkslateblue;
@@ -35,4 +35,33 @@ div {
     width: 89px;
     margin-left: 160px;
     margin-top: 20px;
+}
+
+#CalibrationWindow {
+    position: relative;
+    top: -1350px;
+
+    margin-left: 125px;
+    width: 500px;
+    height: 875px;
+    border-style: double;
+    border-color: yellow;
+    background-color: darkslateblue;
+    display: none;
+    z-index: 2;
+}
+
+#calibrationSubmitButton {
+    height: 34px;
+    width: 89px;
+    margin-left: 200px;
+    margin-top: 20px;
+}
+
+#speedLabel {
+    margin-right: 30px;
+}
+
+.calib-num {
+    width: 40px;
 }

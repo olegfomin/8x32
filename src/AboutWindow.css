@@ -2,16 +2,17 @@
     position: relative;
     top: -1350px;
 
-    margin-left: 100px;
-    width: 550px;
-    height: 700px;
+    margin-left: 150px;
+    width: 500px;
+    height: 1200px;
+    color: white;
     border-style: double;
     border-color: yellow;
-    color: yellow;
     background-color: darkslateblue;
     display: none;
     z-index: 2;
 }
+
 
 #aboutSubmitButton {
     height: 34px;
@@ -21,10 +22,14 @@
 }
 
 #UpfrontImage {
-    display: block;
-    margin-right: 10px;
-    height: 120px;
-    width: 120px;
-    background-size: 115px 115px;
-    background-image: url("./images/UpfrontView.png");
+    background-size: 500px;
+    width: 500px;
+    height: 500px;
+    border: 2px solid;
+    color: black;
+    background-image: url("./images/roboticrover1.jpg");
+}
+
+.yellow {
+    color: yellow;
 }

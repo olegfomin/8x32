@@ -67,7 +67,6 @@ app.post('/logoff', function(request, response){
         response.status(401);
         response.send({"status":e.messages});
     }
-
 });
 
 // Admin creates a new user that is supposed to end-up inside security.properties

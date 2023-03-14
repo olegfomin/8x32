@@ -137,7 +137,7 @@ class Authentication {
         const userName = this.token2UserNameMap[token];
         delete this.token2DateMap[token];
         delete this.token2UserNameMap[token];
-        console.log(`The ${userName} got logged off`);
+        console.log(`The ${userName} got logged off.  `);
     }
 
 }

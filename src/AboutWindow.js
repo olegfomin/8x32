@@ -2,13 +2,16 @@ import './AboutWindow.css';
 import React, { useRef, useEffect } from 'react';
 
 export default class AboutWindow extends React.Component {
-    componentDidMount() {
+    constructor(props) {
+        super(props);
     }
+
     render() {
         return (
             <div id="AboutWindow">
               <form>
                 <div>
+                    <div id="UpfrontImage"></div>
                     <ul>
                         <li>This web page explains how to control 'Robotic Rover' remotely</li>
                         <li>While this chassis can be used anywhere. It will be tested on the tennis court</li>
@@ -20,8 +23,7 @@ export default class AboutWindow extends React.Component {
                             </ul>
                         </li>
                         <li>To start the process, you will have to 'Login' first</li>
-                        <li>If you do not have an account please send us an email</li>
-                        <li>The e-mail is admin@roboticrover.com</li>
+                        <li>If you do not have the credential yet please write to me at <span className="yellow">admin@roboticrover.com</span></li>
                         <li>After you logged in you can go to "Settings" or "Calibration"</li>
                         <li>However if just want to control the rover than click "Start" button on the right</li>
                         <li>In the bottom middle part of the court you shall see the circle with the button R in centre</li>
@@ -35,7 +37,7 @@ export default class AboutWindow extends React.Component {
                         <li>If you do not logoff your session will never expire </li>
                     </ul>
                 </div>
-                <button id="aboutSubmitButton" onClick={this.props.handleAboutSubmitClick}>Ok</button>
+                <button id="aboutSubmitButton" onClick={this.props.handleAboutClick}>Ok</button>
               </form>
             </div>
         );

@@ -3,10 +3,7 @@ import React from 'react';
 import drawACourt from "./DrawCourtFunction"
 import LoginWindow from "./LoginWindow";
 import SettingsWindow from "./SettingsWindow";
-import CalibrationWindow from "./CalibrationWindow";
 import AboutWindow from "./AboutWindow";
-// import RoverWindow from "./RoverWindow";
-import TennisBallWindow from "./TennisBallWindow";
 import {Buffer} from 'buffer';
 import RouteMaker from "./RouteMaker";
 import ControlPanel from "./ControlPanel";
@@ -36,8 +33,6 @@ export default class Court extends React.Component {
         this.handleSettingsClick = this.handleSettingsClick.bind(this);
         this.handleStartClick = this.handleStartClick.bind(this);
         this.handleSettingsSubmitClick = this.handleSettingsSubmitClick.bind(this);
-        this.handleCalibrationClick = this.handleCalibrationClick.bind(this);
-        this.handleCalibrationSubmitClick = this.handleCalibrationSubmitClick.bind(this);
         this.handleAboutSubmitClick = this.handleAboutSubmitClick.bind(this);
         this.handleClick = this.handleClick.bind(this);
         this.redrawPicture = this.redrawPicture.bind(this);
@@ -45,6 +40,7 @@ export default class Court extends React.Component {
         this.failedLogin = this.failedLogin.bind(this);
         this.showInfoMessage = this.showInfoMessage.bind(this);
         this.showErrorMessage = this.showErrorMessage.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.state = {
             "LoggedIn": false,
             "SecurityToken": null,
@@ -67,16 +63,7 @@ export default class Court extends React.Component {
             "isConnected2Socket": false,
             "wsConnected": false,
             "wsLoggedIn": false,
-            Speed2DirectionArr: [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
         };
 
     }
@@ -155,15 +142,13 @@ export default class Court extends React.Component {
     // Calling the Settings form that includes Home coordinates, Service coordinates and who begins the game
     handleSettingsClick(event) {
         window.scrollTo(0, 0);
-        const sw = document.getElementById("SettingsWindow");
-        sw.style.display = "inherit"; // Making Setting window visible
+        this.sw.style.display = "inherit"; // Making Setting window visible
         this.setState({"EditInProcess": true});
     }
 
 // Settings form completed
     handleSettingsSubmitClick(event) {
         event.preventDefault();
-        const sw = document.getElementById("SettingsWindow");
         this.state.WhoStarts = document.getElementById('YourRoverRB').checked;
         this.state.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
         this.state.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
@@ -175,22 +160,11 @@ export default class Court extends React.Component {
         this.state.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
         this.setState({"EditInProcess": false});
 
-        sw.style.display = "none"; // Making setting window invisible
-    }
-
-    handleCalibrationClick(event) {
-        this.cw.style.display = "inherit";
-        this.setState({"EditInProcess": true});
-    }
-
-    handleCalibrationSubmitClick(event) {
-        this.cw.style.display = "none";
-        event.preventDefault();
-        this.setState({"EditInProcess": false});
-
+        this.sw.style.display = "none"; // Making setting window invisible
     }
 
     handleAboutClick(event) {
+        if(this.state.wsConnected) window.removeEventListener('mousemove', this.handleMouseMove);
         event.preventDefault();
         this.aw.style.display = "inherit";
         this.setState({"EditInProcess": true});
@@ -200,7 +174,17 @@ export default class Court extends React.Component {
         event.preventDefault();
         this.aw.style.display = "none";
         this.setState({"EditInProcess": false});
+        if(this.state.wsConnected) window.addEventListener('mousemove', this.handleMouseMove);
+    }
 
+    handleMouseMove(event) {
+        let xy=this.getMousePos(this.canvas, event);
+        const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
+        const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
+        if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
+        else this.setState({isValidSpace: true});
+        if(this.state.LoggedIn && this.state.isConnected && !this.state.EditInProcess)
+            this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
     }
 // This is a flip-flop button that originally has a 'Start' label but as soon as connection with the device is
 // established it'll become 'Stop' button.
@@ -232,15 +216,7 @@ export default class Court extends React.Component {
                     this.setState({"Current_X": this.state.Home_X});
                     this.setState({"Current_Y": this.state.Home_Y});
                     // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
-                    const handleMouseMove = (event) => {
-                        let xy=this.getMousePos(this.canvas, event);
-                        const enclosedX = this.isInsideDmz(xy.x, xy.y) || this.isXOutsideCourt(xy.x) ? "Out" : Math.round(xy.x);
-                        const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
-                        if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
-                        else this.setState({isValidSpace: true});
-                        if(this.state.LoggedIn && this.state.isConnected) this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
-                    };
-                    window.addEventListener('mousemove', handleMouseMove);
+                    window.addEventListener('mousemove', this.handleMouseMove);
 
                     this.statusBar.innerHTML = "Point the area where the rover must go";
                     window.scrollTo(0, 500); // Rolling the scroller to the end
@@ -341,6 +317,9 @@ export default class Court extends React.Component {
          "LoggedIn": true
     });
 
+    this.statusBar.style.color = "black";
+    this.statusBar.style["font-weight"] = "normal";
+    this.statusBar.innerHTML = "The system is ready to operate";
     this.lw.style.display="none";
   };
 
@@ -379,11 +358,11 @@ export default class Court extends React.Component {
   componentDidMount() {
       this.canvas = document.getElementById("myCanvas");
       this.statusBar = document.getElementById("statusBar");
-      this.cw = document.getElementById("CalibrationWindow");
       this.aw = document.getElementById("AboutWindow");
       this.startButton = document.getElementById("startButton");
       this.lw = document.getElementById("loginWindow");
-      const lb = document.getElementById("loginButton");
+      this.sw = document.getElementById("SettingsWindow");
+      this.lb = document.getElementById("loginButton");
 
 
       this.xOffset = this.canvas.offsetLeft;
@@ -429,7 +408,6 @@ export default class Court extends React.Component {
                         wsConnected = {this.state.wsConnected}
                         loginClicked = {this.handleLoginClick}
                         settingClicked = {this.handleSettingsClick}
-                        calibrationClicked = {this.handleCalibrationClick}
                         aboutClicked = {this.handleAboutClick}
                         startClicked = {this.handleStartClick}
           />
@@ -437,19 +415,19 @@ export default class Court extends React.Component {
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>
-          <LoginWindow callBackFunction={this.handleLoginCallback} disabled={!this.state.EditInProcess}></LoginWindow>
+
+          <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
+
           <SettingsWindow homeX={this.state.Home_X}
                           homeY={this.state.Home_Y}
                           serveX={this.state.Serve_X}
                           serveY={this.state.Serve_Y}
                           returnHome={this.state.ReturnHome}
                           WhoStarts={this.state.WhoStarts}
-                          handleSettingsSubmitClick={this.handleSettingsSubmitClick}/>
-          <CalibrationWindow Speed2DirectionArr={this.state.Speed2DirectionArr}
-                             handleCalibrationSubmitClick={this.handleCalibrationSubmitClick}
-                             disabled={!this.state.LoggedIn && !this.state.EditInProcess}/>
-          <AboutWindow handleAboutClick={this.handleAboutClick} disabled={!this.state.LoggedIn}/>
-          <TennisBallWindow visible={false} />
+                          handleSettingsSubmitClick={this.handleSettingsSubmitClick}
+                          isConnected={this.state.isConnected} />
+
+          <AboutWindow handleAboutClick={this.handleAboutSubmitClick}/>
         </div>
     );
   };
