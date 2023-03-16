@@ -7,6 +7,7 @@ import AboutWindow from "./AboutWindow";
 import {Buffer} from 'buffer';
 import RouteMaker from "./RouteMaker";
 import ControlPanel from "./ControlPanel";
+import RemoteCommunication from "./RemoteCommunication"
 
 export default class Court extends React.Component {
     BASE_URL = "ws://www.roboticrover.com:5000/"
@@ -23,6 +24,7 @@ export default class Court extends React.Component {
 
     constructor(props) {
         super(props);
+        this.remoteCommunication = new RemoteCommunication(this);
         this.xOffset = 0; // Temporary setting/declaring this variable to zero they will take their correct value
         this.yOffset = 0; // when component mounts
 
@@ -41,6 +43,12 @@ export default class Court extends React.Component {
         this.showInfoMessage = this.showInfoMessage.bind(this);
         this.showErrorMessage = this.showErrorMessage.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.form2DCalibrationArray = this.form2DCalibrationArray.bind(this);
+        this.settingsSaved = this.settingsSaved.bind(this);
+        this.settingsFailed = this.settingsFailed.bind(this);
+        this.settingsRetrieved = this.settingsRetrieved.bind(this);
+        this.settingsRetrievalFailed = this.settingsRetrievalFailed.bind(this);
+
         this.state = {
             "LoggedIn": false,
             "SecurityToken": null,
@@ -60,11 +68,25 @@ export default class Court extends React.Component {
             "isConnected": false, // The connection with a rover has been established
             "EditInProcess": false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
             "isValidSpace": false,
+            "HeartBeatAgentId": "",
             "isConnected2Socket": false,
             "wsConnected": false,
             "wsLoggedIn": false,
-
+            "speed2LeftDegreeArray":[[]],
+            "speed2RightDegreeArray":[[]]
         };
+
+        this.settings = {
+            "Serve_X": 376, // The X coordinate where the rover serves from
+            "Serve_Y": 946, // The Y coordinate where the rover serves from
+            "Home_X": 291,    // The X coordinate where the rover goes towards after each shot
+            "Home_Y": 946,   // The Y coordinate where the rover goes towards after each shot
+            "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
+            "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
+            "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
+            "speed2LeftDegreeArray":[[]],
+            "speed2RightDegreeArray":[[]]
+        }
 
     }
 
@@ -78,7 +100,6 @@ export default class Court extends React.Component {
             this.statusBar.innerHTML = messageBefore;
         }, "3500");
     }
-
     showErrorMessage(msg) {
         const messageBefore = this.statusBar.innerHTML;
         this.statusBar.style.color = "red";
@@ -149,18 +170,72 @@ export default class Court extends React.Component {
 // Settings form completed
     handleSettingsSubmitClick(event) {
         event.preventDefault();
-        this.state.WhoStarts = document.getElementById('YourRoverRB').checked;
-        this.state.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
-        this.state.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
-        this.state.Home_X = parseInt(document.getElementById('homeCoordXNumber').value);
-        this.state.Home_Y = parseInt(document.getElementById('homeCoordYNumber').value);
+        this.setState({"WhoStarts" : document.getElementById('YourRoverRB').checked});
+        this.setState({"Serve_X" : parseInt(document.getElementById('servingCoordXNumber').value)});
+        this.setState({"Serve_Y" : parseInt(document.getElementById('servingCoordYNumber').value)});
+        this.setState({"Home_X" : parseInt(document.getElementById('homeCoordXNumber').value)});
+        this.setState({"Home_Y" : parseInt(document.getElementById('homeCoordYNumber').value)});
         this.setState({"Current_X": this.state.Home_X});
         this.setState({"Current_Y": this.state.Home_Y});
-
-        this.state.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
+        this.setState({"ReturnHome" : document.getElementById('returnHomeCheckBox').checked});
         this.setState({"EditInProcess": false});
-
+        const calibrationLeft = this.form2DCalibrationArray('l');
+        const calibrationRight = this.form2DCalibrationArray('r');
+        this.setState({"speed2LeftDegreeArray": calibrationLeft});
+        this.setState({"speed2RightDegreeArray": calibrationRight});
         this.sw.style.display = "none"; // Making setting window invisible
+
+        this.settings.Home_X = this.state.Home_X;
+        this.settings.ReturnHome = this.state.ReturnHome;
+        this.settings.Home_Y = this.state.Home_Y;
+        this.settings.WhoStarts = this.state.WhoStarts;
+        this.settings.Serve_X = this.state.Serve_X;
+        this.settings.Serve_Y = this.state.Serve_Y;
+        this.settings.OpponentServesNow = this.state.OpponentServesNow;
+        this.settings.speed2LeftDegreeArray = this.state.speed2LeftDegreeArray;
+        this.settings.speed2RightDegreeArray = this.state.speed2RightDegreeArray;
+
+    }
+
+    settingsSaved() {
+        this.showInfoMessage("Settings saved successfully");
+    }
+
+    settingsFailed(reason) {
+        this.showErrorMessage("Setting storage failed because of "+reason)
+    }
+
+    settingsRetrieved(settings) {
+        this.settings = settings;
+        this.setState({"Home_X": settings.Home_X});
+        this.setState({"Home_X": settings.Home_Y});
+        this.setState({"ReturnHome": settings.ReturnHome});
+        this.setState({"WhoStarts": settings.WhoStarts});
+        this.setState({"Serve_X": settings.Serve_X});
+        this.setState({"Serve_Y": settings.Serve_Y});
+        this.setState({"OpponentServesNow" : this.state.OpponentServesNow});
+        this.setState({"speed2LeftDegreeArray": settings.speed2LeftDegreeArray});
+        this.setState({"speed2RightDegreeArray": settings.speed2RightDegreeArray});
+
+        this.showInfoMessage("Settings successfully loaded");
+
+    }
+
+    settingsRetrievalFailed(reason) {
+        this.showErrorMessage(`Settings did not load because of ${reason}`);
+    }
+
+    // prefix here is either 'l' or 'r' to reach either <input id={"l"+i+"0"} or <input id={"r"+i+"0"}
+    form2DCalibrationArray(prefix) {
+        const result = [];
+        for(let i=0; i<7; i++) {
+            const calib1Raw = [];
+            for(let j=0; j<7; j++) {
+                calib1Raw.push((parseInt(document.getElementById(prefix+i+j).value)));
+            }
+            result.push(calib1Raw);
+        }
+        return result;
     }
 
     handleAboutClick(event) {
@@ -230,78 +305,30 @@ export default class Court extends React.Component {
     };
 
   heartBeat() {
-    console.log("Heart-beat");
-    const heartBeatAgentId = setInterval( () => {
-        const requestOptions = {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json',
-                'Content-Length': '2',
-                'Accept': '*/*',
-                'security-token': this.state.SecurityToken
-            },
-            body: JSON.stringify({})
-        };
-        fetch('heart-beat', requestOptions) // Calling the authentication server
-            .then(response => {if(response.status != 200) throw new Error(JSON.stringify(response.body))})
-            .catch(e=>{this.failedLogin(e)});
-    }, 60*1000);
-
+    console.log("Heart-beat "+new Date());
+    const heartBeatAgentId = this.remoteCommunication.heartBeat(this.state.SecurityToken);
     this.setState({"HeartBeatAgentId": heartBeatAgentId});
+  }
+
+  heartBeatsFailed() {
+      this.showErrorMessage(`The last ${this.remoteCommunication.MAX_FAILED_HEARTBEATS} consecutive heart beats failed `);
   }
 
   /* Handles the tap on the "Submit" button on the Login screen. This is quite complex method that works as a
   * toggle switch thus if you are logged off then this button serves as LoginButton otherwise if you are
   * already logged-in than you shall logout of the system */
-  handleLoginCallback(event) {
+  handleLoginCallback(event) { // In fact this method should have been named handleLoginLogoffCallback but it is too cumbersome
     event.preventDefault();
     if(!this.state.LoggedIn) { // The application is in logoff state right now and it is needed to get logged in
         const userName = document.getElementById("username").value;
         const password = document.getElementById("password").value;
-        const encodedString = Buffer.from(`${userName}:${password}`).toString('base64');
-        const requestOptions = { // TODO it seems like all communication pieces must be moved into a separate class
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': '2',
-                'Accept': '*/*',
-                'authorization': 'Basic ' + encodedString
-            },
-            body: JSON.stringify({})
-        };
-        fetch('auth', requestOptions) // Calling the authentication server
-            .then(response => {
-                if (response.status == 200) this.successfulLogin(response);
-                else throw new Error(JSON.stringify(response.body))
-            })
-            .catch(e => {
-                this.failedLogin(e)
-            });
+        this.remoteCommunication.login(userName, password); // It is remote call but it is encapsulated inside remoteCommunication
+                                                            // that calls "successfulLogin" or "failedLogin" respectively
+
     } else {
         // Logoff here because the system is logged in already presumably
         // first off all lets switch off the heart beat
-        if(this.state.HeartBeatAgentId != null && this.state.HeartBeatAgentId != undefined) clearInterval(this.state.HeartBeatAgentId);
-        const requestOptions = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': '2',
-                'Accept': '*/*',
-                'security-token':+""+this.state.SecurityToken
-            },
-            body: JSON.stringify({})
-        };
-        fetch('logoff', requestOptions) // Calling the authentication server
-            .then(response => {
-                if (response.status == 200) {
-                    this.statusBar.innerHTML = "You have successfully logged off the system";
-                    setTimeout(()=>{this.statusBar.innerHTML = "You may login again"}, 5000);
-                }
-                else throw new Error(JSON.stringify(response.body))
-            })
-            .catch(e => {
-                this.failedLogin(e)
-            });
-
+        this.remoteCommunication.logoff(this.state.SecurityToken, this.state.HeartBeatAgentId);
     }
   }
 
@@ -328,16 +355,17 @@ export default class Court extends React.Component {
       this.setState({
           "LoggedIn": false
       });
-      this.statusBar.style.color = "red";
-      this.statusBar.style["font-weight"] = "bold";
-
-      this.statusBar.innerHTML = "Login failed "+e;
-      this.lw.style.display="none";
-      setTimeout(() => {
-          this.statusBar["font-weight"] = "normal";
-          this.statusBar.innerHTML = "Please, click the Login button to access the system";
-      }, "3400");
+      this.showErrorMessage("Login failed "+e);
   }
+
+  successfulLogoff() {
+      this.showInfoMessage("You have successfully logged off the system");
+  }
+
+  failedLogoff(reason) {
+      this.showErrorMessage("Logoff failed. Please try again later "+reason);
+  }
+
 
 // Getting mouse position on the canvas as {x,y} json
   getMousePos(canvas, evt) {

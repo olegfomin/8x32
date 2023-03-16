@@ -67,7 +67,7 @@ class Authentication {
         this.token2DateMap[token] = currentTime+this.SESSION_DURATION;
         const username = this.token2UserNameMap[token];
         if(username==null || username==undefined) throw new Error(`The provided Token ${token} is invalid`);
-        console.log(`The ${username} has reconfirmed its heart beat` )
+        console.log(`The ${username} has reconfirmed its heart beat on ${new Date()}` )
     }
 
     // Creation of the new users can be done by the 'admin' user only

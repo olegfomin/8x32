@@ -36,15 +36,59 @@ export default class SettingsWindow extends React.Component {
         }
     }
 
+    degreesIntoIndex(degree) {
+        switch (degree) {
+            case "0": return 0;
+            case "10": return 1;
+            case "25": return 2;
+            case "45": return 3;
+            case "65": return 4;
+            case "75": return 5;
+            case "90": return 6;
+            default: throw new Error("Unknown turn degree value: "+degree);
+        }
+    }
+
+    indexIntoDegrees(index) {
+        switch (index) {
+            case 0: return "0";
+            case 1: return "10";
+            case 2: return "25";
+            case 3: return "45";
+            case 4: return "65";
+            case 5: return "75";
+            case 6: return "90";
+            default: throw new Error("Unknown turn degree value: "+index);
+        }
+    }
+
 
     render() {
         const calibRowsLeft = [];
         for(let i=0; i<7; i++){
-            calibRowsLeft.push(<tr key={"l"+i} id={"l"+i}><td>{this.indexIntoSpeed(i)}</td><td><input id={"l"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td><td><input id={"l"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"l"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td></tr>);
+            calibRowsLeft.push(<tr key={"l"+i} id={"l"+i}>
+                                  <td>{this.indexIntoSpeed(i)}</td>
+                                  <td><input id={"l"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"l"+i+"6"} type="number" className="calib-num" defaultValue="0"/></td>
+                              </tr>);
         }
         const calibRowsRight = [];
         for(let i=0; i<7; i++){
-            calibRowsRight.push(<tr key={"r"+i} id={"r"+i}><td>{this.indexIntoSpeed(i)}</td><td><input id={"r"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td><td><input id={"r"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td><td><input id={"r"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td></tr>);
+            calibRowsRight.push(<tr key={"r"+i} id={"r"+i}>
+                                  <td>{this.indexIntoSpeed(i)}</td>
+                                  <td><input id={"r"+i+"0"} type="number" className="calib-num" defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"1"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"2"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td>
+                                </tr>);
         }
 
         return (
