@@ -87,7 +87,7 @@ export default class SettingsWindow extends React.Component {
                                   <td><input id={"r"+i+"3"} type="number" className="calib-num"  defaultValue="0"/></td>
                                   <td><input id={"r"+i+"4"} type="number" className="calib-num"  defaultValue="0"/></td>
                                   <td><input id={"r"+i+"5"} type="number" className="calib-num"  defaultValue="0"/></td>
-                                  <td><input id={"r"+i+"7"} type="number" className="calib-num" defaultValue="0"/></td>
+                                  <td><input id={"r"+i+"6"} type="number" className="calib-num" defaultValue="0"/></td>
                                 </tr>);
         }
 

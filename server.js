@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 
 const Authentication = require("./security");
 const authentication = new Authentication();
+const fs = require('fs');
 
 const app = express(); // create express app
 const expressWs = require('express-ws')(app); // We use the web-socket here to receive the real robot position coordinates
@@ -19,6 +20,7 @@ let wsDate     = null;
 app.use(express.static('build'));
 
 app.post('/auth', function(request, response) {
+    console.log("Auth attempt")
     const virginHeaderBase64 = request.headers["authorization"];
     try {
         if (virginHeaderBase64 == null || virginHeaderBase64 == undefined) throw new Error("The Authorization header is missing");
@@ -83,6 +85,22 @@ app.post('/user', function(request, response){
             response.send({"message":`User ${userName} has NOT been created because of ${error}`});
         }
     });
+});
+
+app.put('/settings', function(request, response){
+    const securityToken = request.headers["security-token"];
+    const userName = authentication.token2UserNameMap[securityToken];
+    console.log(`Setting for ${userName} were called`);
+    fs.writeFile(`./settings/${userName}.json`, JSON.stringify(request.body), function (err) {
+        if (err) {
+            response.status(401);
+            response.send({"message":`User ${userName} settings were NOT saved because of ${err}`});
+            return;
+        }
+        response.status(200);
+        console.log(`The user ${userName} settings have been successfully saved`);
+    });
+
 });
 
 // Rendering all the users and its status

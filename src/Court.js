@@ -195,6 +195,8 @@ export default class Court extends React.Component {
         this.settings.speed2LeftDegreeArray = this.state.speed2LeftDegreeArray;
         this.settings.speed2RightDegreeArray = this.state.speed2RightDegreeArray;
 
+        this.remoteCommunication.saveSettings(this.state.SecurityToken, this.settings);
+
     }
 
     settingsSaved() {
@@ -202,7 +204,7 @@ export default class Court extends React.Component {
     }
 
     settingsFailed(reason) {
-        this.showErrorMessage("Setting storage failed because of "+reason)
+        this.showErrorMessage("Setting storage failed because of "+reason);
     }
 
     settingsRetrieved(settings) {
@@ -304,9 +306,8 @@ export default class Court extends React.Component {
         }
     };
 
-  heartBeat() {
-    console.log("Heart-beat "+new Date());
-    const heartBeatAgentId = this.remoteCommunication.heartBeat(this.state.SecurityToken);
+  heartBeat(securityToken) {
+    const heartBeatAgentId = this.remoteCommunication.heartBeat(securityToken);
     this.setState({"HeartBeatAgentId": heartBeatAgentId});
   }
 
@@ -336,9 +337,10 @@ export default class Court extends React.Component {
   * Here we also start tracing the mouse movements. Attention! The Login button becomes a Logoff button
   * which enables me to reuse the space with this toggling mechanism */
   successfulLogin(response) {
-    this.heartBeat();
-    this.setState({"SecurityToken" : response.headers.get("security-token")});
+    const securityToken = response.headers.get("security-token");
+    this.setState({"SecurityToken" : securityToken});
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
+    this.heartBeat(securityToken);
 
     this.setState({
          "LoggedIn": true

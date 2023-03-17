@@ -24,7 +24,7 @@ export default class RemoteCommunication {
             },
             body: JSON.stringify({})
         };
-        fetch('', requestOptions) // Calling the authentication server
+        fetch('auth', requestOptions) // Calling the authentication server
             .then(response => {
                 if (response.status == 200) this.court.successfulLogin(response);
                 else this.court.failedLogin(new Error(""+response.status));
@@ -36,6 +36,7 @@ export default class RemoteCommunication {
 
     saveSettings(token, settings) {
         const settingsAsString = JSON.stringify(settings);
+        console.log("saveSettings "+token+" was called");
         const requestOptions = {
             method: 'PUT',
             headers: {
@@ -85,6 +86,7 @@ export default class RemoteCommunication {
 
 
     heartBeat(token) {
+        console.log("token="+token);
         const heartBeatAgentId = setInterval( () => {
             const requestOptions = {
                 method: 'PUT',
