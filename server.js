@@ -36,11 +36,11 @@ app.post('/auth', function(request, response) {
 
         response.header("security-token", token);
         response.status(200);
-        response.send({"status":"Authenticated"});
+        response.send({"message":"Authenticated"});
     } catch(e) {
         console.log(e);
         response.status(401);
-        response.send({"status":e.messages});
+        response.send({"message":e.messages});
     }
 
 });
@@ -49,12 +49,12 @@ app.put("/heart-beat", function(request, response) {
     const securityToken = request.headers["security-token"];
     if(securityToken==undefined || securityToken==null) {
         response.status(401);
-        response.send({"reason":"No security token found in a message"});
+        response.send({"message":"No security token found in a message"});
         return;
     }
     authentication.validateAndRefresh(securityToken);
     response.status(200);
-    response.send({"status":"Accepted"});
+    response.send({"message":"Accepted"});
 });
 
 app.post('/logoff', function(request, response){
@@ -62,7 +62,7 @@ app.post('/logoff', function(request, response){
     try {
         authentication.logoff(securityToken);
         response.status(200);
-        response.send({"status":"Logged off"});
+        response.send({"message":"Logged off"});
         console.log("User successfully logged off");
      } catch(e) {
         console.log(e);
@@ -90,7 +90,12 @@ app.post('/user', function(request, response){
 app.put('/settings', function(request, response){
     const securityToken = request.headers["security-token"];
     const userName = authentication.token2UserNameMap[securityToken];
-    console.log(`Setting for ${userName} were called`);
+    if(userName == null || userName == undefined) {
+        response.status(401);
+        response.send({"message":`User for the security token supplied has not been found`});
+        return;
+    }
+    console.log(`Retrieve setting for ${userName} were called`);
     fs.writeFile(`./settings/${userName}.json`, JSON.stringify(request.body), function (err) {
         if (err) {
             response.status(401);
@@ -98,10 +103,37 @@ app.put('/settings', function(request, response){
             return;
         }
         response.status(200);
+        response.send({"message":`The user ${userName} settings have been successfully saved`});
         console.log(`The user ${userName} settings have been successfully saved`);
+    });
+});
+
+app.get('/settings', function(request, response){
+    const securityToken = request.headers["security-token"];
+    const userName = authentication.token2UserNameMap[securityToken];
+    if(userName == null || userName == undefined) {
+        response.status(401);
+        response.send({"message":`User for the security token supplied has not been found`});
+        return;
+    }
+
+    console.log(`Read Setting for ${userName} were called`);
+    fs.readFile(`./settings/${userName}.json`,  function (err, buffer) {
+        if (err != null) {
+            response.status(404);
+            response.send({"message":`Settings are not read probably because the user's ${userName} settings have never been set}`});
+            return;
+        }
+    response.status(200);
+        console.log(buffer.toString());
+        response.send(buffer.toString());
+        console.log("Following settings were sent:"+buffer.toString());
+        console.log(`The user ${userName} settings have been successfully retrieved`);
+
     });
 
 });
+
 
 // Rendering all the users and its status
 app.get('/user', function(request, response) {

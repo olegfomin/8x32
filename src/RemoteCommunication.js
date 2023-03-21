@@ -1,5 +1,6 @@
 import Court from "./Court"
 import {Buffer} from "buffer";
+import axios from 'axios';
 
 export default class RemoteCommunication {
     constructor(court) {
@@ -8,7 +9,11 @@ export default class RemoteCommunication {
         this.BASE_URL = "http://www.roboticrover.com:5000";
         this.court = court;
 
+        this.getSettings = this.getSettings.bind(this);
+
         this.failedHeartBeatResponseCounter = this.failedHeartBeatResponseCounter.bind(this);
+        this.court.settingsRetrieved = this.court.settingsRetrieved.bind(court);
+        this.court.settingsRetrievalFailed = this.court.settingsRetrievalFailed.bind(court);
     }
 
     // Logs into the system and returns the security token in callback
@@ -49,7 +54,10 @@ export default class RemoteCommunication {
         };
         fetch('settings', requestOptions) // Calling the authentication server
             .then(response => {
-                if (response.status == 200) this.court.settingsSaved();
+                if (response.status == 200) {
+                    console.log("response.status saved settingsSaved called");
+                    this.court.settingsSaved();
+                }
                 else this.court.settingsFailed(response.status);
             })
             .catch(e => {
@@ -59,30 +67,40 @@ export default class RemoteCommunication {
     }
 
     getSettings(token) {
+        console.log("INSIDE SETTINGS BEFORE PROMISES");
         const requestOptions = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': "2",
-                'Accept': '*/*',
+                'Accept': 'application/json',
                 'security-token': token
-            },
-            body: "{}"
+            }
         };
-        fetch('settings', requestOptions) // Calling the authentication server
+        const that = this;
+        fetch('settings', requestOptions) // Calling the setting holding service
             .then(response => {
-                if (response.status == 200) this.court.settingsRetrieved(response);
-                else this.court.settingsRetrievalFailed(response.status);
+                if (response.status === 200) {
+                    console.log("I AM INSIDE response.json() ?????? " + response.json().Home_X);
+                    return response.json();
+                } else {
+                    that.court.settingsRetrievalFailed(response.message);
+                }
+            })
+            .then(function(myJson) {
+                console.log("===THIS="+that);
+                console.log("=== MyJson ===>"+myJson);
+                console.log("I AM INSIDE before this.court.settingsRetrieved: "+myJson);
+                that.court.settingsRetrieved(that);
+                console.log("I AM INSIDE After this.court.settingsRetrieved: "+myJson);
             })
             .catch(e => {
-                this.court.settingsRetrievalFailed(e);
+                that.court.settingsRetrievalFailed(e);
             });
-
     }
 
-    sendCoordinates(token, xy) {
+/*    sendCoordinates(token, xy) {
 
-    }
+    } */
 
 
     heartBeat(token) {
