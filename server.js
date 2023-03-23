@@ -95,7 +95,9 @@ app.put('/settings', function(request, response){
         response.send({"message":`User for the security token supplied has not been found`});
         return;
     }
-    console.log(`Retrieve setting for ${userName} were called`);
+    console.log(`Saving setting for ${userName} were called`);
+    console.log("Following settings were received:"+JSON.stringify(request.body));
+
     fs.writeFile(`./settings/${userName}.json`, JSON.stringify(request.body), function (err) {
         if (err) {
             response.status(401);
@@ -126,7 +128,7 @@ app.get('/settings', function(request, response){
         }
     response.status(200);
         console.log(buffer.toString());
-        response.send(buffer.toString());
+        response.send(JSON.parse(buffer.toString()));
         console.log("Following settings were sent:"+buffer.toString());
         console.log(`The user ${userName} settings have been successfully retrieved`);
 

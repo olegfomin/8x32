@@ -9,11 +9,8 @@ export default class RemoteCommunication {
         this.BASE_URL = "http://www.roboticrover.com:5000";
         this.court = court;
 
-        this.getSettings = this.getSettings.bind(this);
-
         this.failedHeartBeatResponseCounter = this.failedHeartBeatResponseCounter.bind(this);
-        this.court.settingsRetrieved = this.court.settingsRetrieved.bind(court);
-        this.court.settingsRetrievalFailed = this.court.settingsRetrievalFailed.bind(court);
+        this.failedHeartBeatResponseCounter = this.failedHeartBeatResponseCounter.bind(this);
     }
 
     // Logs into the system and returns the security token in callback
@@ -39,64 +36,8 @@ export default class RemoteCommunication {
             });
     }
 
-    saveSettings(token, settings) {
-        const settingsAsString = JSON.stringify(settings);
-        console.log("saveSettings "+token+" was called");
-        const requestOptions = {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': "'"+settingsAsString.length+"'",
-                'Accept': '*/*',
-                'security-token': token
-            },
-            body: settingsAsString
-        };
-        fetch('settings', requestOptions) // Calling the authentication server
-            .then(response => {
-                if (response.status == 200) {
-                    console.log("response.status saved settingsSaved called");
-                    this.court.settingsSaved();
-                }
-                else this.court.settingsFailed(response.status);
-            })
-            .catch(e => {
-                this.court.settingsFailed(e);
-            });
 
-    }
 
-    getSettings(token) {
-        console.log("INSIDE SETTINGS BEFORE PROMISES");
-        const requestOptions = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'security-token': token
-            }
-        };
-        const that = this;
-        fetch('settings', requestOptions) // Calling the setting holding service
-            .then(response => {
-                if (response.status === 200) {
-                    console.log("I AM INSIDE response.json() ?????? " + response.json().Home_X);
-                    return response.json();
-                } else {
-                    that.court.settingsRetrievalFailed(response.message);
-                }
-            })
-            .then(function(myJson) {
-                console.log("===THIS="+that);
-                console.log("=== MyJson ===>"+myJson);
-                console.log("I AM INSIDE before this.court.settingsRetrieved: "+myJson);
-                that.court.settingsRetrieved(that);
-                console.log("I AM INSIDE After this.court.settingsRetrieved: "+myJson);
-            })
-            .catch(e => {
-                that.court.settingsRetrievalFailed(e);
-            });
-    }
 
 /*    sendCoordinates(token, xy) {
 

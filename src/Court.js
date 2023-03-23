@@ -43,15 +43,9 @@ export default class Court extends React.Component {
         this.showInfoMessage = this.showInfoMessage.bind(this);
         this.showErrorMessage = this.showErrorMessage.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
-        this.form2DCalibrationArray = this.form2DCalibrationArray.bind(this);
-        this.settingsSaved = this.settingsSaved.bind(this);
-        this.settingsFailed = this.settingsFailed.bind(this);
-        this.settingsRetrieved = this.settingsRetrieved.bind(this);
-        this.settingsRetrievalFailed = this.settingsRetrievalFailed.bind(this);
-        this.calibrationArray2Form = this.calibrationArray2Form.bind(this);
 
 
-            this.state = {
+          this.state = {
             "LoggedIn": false,
             "SecurityToken": null,
             "LastSecurityTokenUpdate": 0,
@@ -77,19 +71,6 @@ export default class Court extends React.Component {
             "speed2LeftDegreeArray":[[]],
             "speed2RightDegreeArray":[[]]
         };
-
-        this.settings = {
-            "Serve_X": 376, // The X coordinate where the rover serves from
-            "Serve_Y": 946, // The Y coordinate where the rover serves from
-            "Home_X": 291,    // The X coordinate where the rover goes towards after each shot
-            "Home_Y": 946,   // The Y coordinate where the rover goes towards after each shot
-            "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
-            "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
-            "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
-            "speed2LeftDegreeArray":[[]],
-            "speed2RightDegreeArray":[[]]
-        }
-
     }
 
     showInfoMessage(msg) {
@@ -167,98 +148,14 @@ export default class Court extends React.Component {
         window.scrollTo(0, 0);
         this.sw.style.display = "inherit"; // Making Setting window visible
         this.setState({"EditInProcess": true});
-        console.log("Calling get settings ");
-        this.remoteCommunication.getSettings(this.settings.SecurityToken);
     }
 
 // Settings form completed
     handleSettingsSubmitClick(event) {
         event.preventDefault();
-        this.setState({"WhoStarts" : document.getElementById('YourRoverRB').checked});
-        this.setState({"Serve_X" : parseInt(document.getElementById('servingCoordXNumber').value)});
-        this.setState({"Serve_Y" : parseInt(document.getElementById('servingCoordYNumber').value)});
-        this.setState({"Home_X" : parseInt(document.getElementById('homeCoordXNumber').value)});
-        this.setState({"Home_Y" : parseInt(document.getElementById('homeCoordYNumber').value)});
-        this.setState({"Current_X": this.state.Home_X});
-        this.setState({"Current_Y": this.state.Home_Y});
-        this.setState({"ReturnHome" : document.getElementById('returnHomeCheckBox').checked});
         this.setState({"EditInProcess": false});
-        const calibrationLeft = this.form2DCalibrationArray('l');
-        const calibrationRight = this.form2DCalibrationArray('r');
-        this.setState({"speed2LeftDegreeArray": calibrationLeft});
-        this.setState({"speed2RightDegreeArray": calibrationRight});
         this.sw.style.display = "none"; // Making setting window invisible
-
-        this.settings.Home_X = this.state.Home_X;
-        this.settings.ReturnHome = this.state.ReturnHome;
-        this.settings.Home_Y = this.state.Home_Y;
-        this.settings.WhoStarts = this.state.WhoStarts;
-        this.settings.Serve_X = this.state.Serve_X;
-        this.settings.Serve_Y = this.state.Serve_Y;
-        this.settings.OpponentServesNow = this.state.OpponentServesNow;
-        this.settings.speed2LeftDegreeArray = calibrationLeft;
-        this.settings.speed2RightDegreeArray = calibrationRight;
-
-        this.remoteCommunication.saveSettings(this.state.SecurityToken, this.settings);
-
     }
-
-    settingsSaved() {
-        this.showInfoMessage("Settings saved successfully");
-    }
-
-    settingsFailed(reason) {
-        this.showErrorMessage("Setting storage failed because of "+reason);
-    }
-
-    settingsRetrieved(settings) {
-        console.log("I am HERE in settingsRetrieved "+typeof settings);
-        const setting1 = JSON.parse(settings.toString());
-        this.setState({"Home_X ": setting1.Home_X});
-        console.log("I am HERE in settingsRetrieved "+typeof settings +"Home_X="+settings.Home_X);
-
-        /*        this.setState({"Home_Y": settings.Home_Y});
-                this.setState({"ReturnHome": settings.ReturnHome});
-                this.setState({"WhoStarts": settings.WhoStarts});
-                this.setState({"Serve_X": settings.Serve_X});
-                this.setState({"Serve_Y": settings.Serve_Y});
-                this.setState({"OpponentServesNow" : this.state.OpponentServesNow});
-                this.setState({"speed2LeftDegreeArray": settings.speed2LeftDegreeArray});
-                this.setState({"speed2RightDegreeArray": settings.speed2RightDegreeArray});
-                this.calibrationArray2Form("l", settings.speed2LeftDegreeArray);
-                this.calibrationArray2Form("r", settings.speed2RightDegreeArray); */
-
-        this.showInfoMessage("Settings successfully loaded");
-
-    }
-
-    settingsRetrievalFailed(reason) {
-        console.log("SettingsRetrieval failed => "+reason);
-        this.showInfoMessage(`Settings are getting the default values`);
-    }
-
-    // prefix here is either 'l' or 'r' to reach either <input id={"l"+i+"0"} or <input id={"r"+i+"0"}
-    form2DCalibrationArray(prefix) {
-        const result = [];
-        for(let i=0; i<7; i++) {
-            const calib1Raw = [];
-            for(let j=0; j<7; j++) {
-                calib1Raw.push((parseInt(document.getElementById(prefix+i+j).value)));
-            }
-            result.push(calib1Raw);
-        }
-        return result;
-    }
-
-    calibrationArray2Form(prefix, arrayOfSubArrays) {
-        for(let i=0; i<7; i++) {
-            const calibRaw = arrayOfSubArrays[i];
-            for(let j=0; j<7; j++) {
-                document.getElementById(prefix+i+j).value = calibRaw[j];
-            }
-        }
-    }
-
 
     handleAboutClick(event) {
         if(this.state.wsConnected) window.removeEventListener('mousemove', this.handleMouseMove);
@@ -371,7 +268,6 @@ export default class Court extends React.Component {
     this.statusBar.innerHTML = "The system is ready to operate";
     this.lw.style.display="none";
     console.log("calling this.remoteCommunication.getSettings(securityToken)");
-    this.remoteCommunication.getSettings(securityToken);
   };
 
   // Handle the non 200 response from the authentication service
@@ -469,15 +365,10 @@ export default class Court extends React.Component {
           </canvas>
 
           <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
+          <SettingsWindow handleSettingsSubmitClick={this.handleSettingsSubmitClick}
+                            SecurityToken={this.state.SecurityToken}
+                            isConnected={this.state.isConnected}/>
 
-          <SettingsWindow homeX={this.state.Home_X}
-                          homeY={this.state.Home_Y}
-                          serveX={this.state.Serve_X}
-                          serveY={this.state.Serve_Y}
-                          returnHome={this.state.ReturnHome}
-                          WhoStarts={this.state.WhoStarts}
-                          handleSettingsSubmitClick={this.handleSettingsSubmitClick}
-                          isConnected={this.state.isConnected} />
 
           <AboutWindow handleAboutClick={this.handleAboutSubmitClick}/>
         </div>
