@@ -17,6 +17,7 @@ class Authentication {
         this.userName2PasswordMap = {}; // Stores the user-names as a key and decrypted password as value
         this.token2DateMap = {}; // Stores a map between the token received after a user authentication and a date when it was given
         this.token2UserNameMap = {} // Stores a map between the token received after a user authentication and a username
+        this.heartBeatCount = 0;
         this.load = this.load.bind(this);
         this.purge = this.purge.bind(this);
         this.authenticate = this.authenticate.bind(this);
@@ -58,6 +59,7 @@ class Authentication {
         return token;
     }
 
+
     // Validating that the token is still valid and labels it with a new time so it ain't gonna expire
     validateAndRefresh(token) {
         const tokenDate = this.token2DateMap[token];
@@ -66,8 +68,13 @@ class Authentication {
         if (tokenDate < currentTime) throw new Error(`The token ${token} is expired`);
         this.token2DateMap[token] = currentTime+this.SESSION_DURATION;
         const username = this.token2UserNameMap[token];
-        if(username==null || username==undefined) throw new Error(`The provided Token ${token} is invalid`);
-        console.log(`The ${username} has reconfirmed its heart beat on ${new Date()}` )
+        if(username==null || username==undefined) {
+            throw new Error(`The provided Token ${token} is invalid`);
+        }
+        if(this.heartBeatCount%10==0) { // Notifying the system about every tenth heartbeat so not to clutter console
+            console.log(`The ${username} has reconfirmed its heart beat on ${new Date()}` )
+        }
+        this.heartBeatCount++;
     }
 
     // Creation of the new users can be done by the 'admin' user only

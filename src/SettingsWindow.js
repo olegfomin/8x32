@@ -2,7 +2,7 @@ import './SettingsWindow.css';
 import React, { useRef, useEffect } from 'react';
 import SettingsCommunication from './SettingsCommunication';
 
-
+/** Contains the form that allows editing arguments for settings */
 export default class SettingsWindow extends React.Component {
 
     constructor(props) {
@@ -10,12 +10,12 @@ export default class SettingsWindow extends React.Component {
         this.timerID = null; // timer that wait for the moment when securityToken is supplied and thus we can retrieve the settings
         this.speedIntoIndex = this.speedIntoIndex.bind(this);
         this.state = {
+            "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
             "Serve_X": null, // The X coordinate where the rover serves from
             "Serve_Y": null, // The Y coordinate where the rover serves from
             "Home_X": null,    // The X coordinate where the rover goes towards after each shot
             "Home_Y": null,   // The Y coordinate where the rover goes towards after each shot
             "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
-            "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
             "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
             "speed2LeftDegreeArray":[[]],
             "speed2RightDegreeArray":[[]]
@@ -31,7 +31,7 @@ export default class SettingsWindow extends React.Component {
 
         this.settingsCommunication = new SettingsCommunication(this);
     }
-    // prefix here is either 'l' or 'r' to reach either <input id={"l"+i+"0"} or <input id={"r"+i+"0"}
+    // prefix here is either 'l' or 'r' to reach either <input id={"l"+i+"0"} or <input id={"r"+i+"0"} to retrieve the value from
     form2DCalibrationArray(prefix) {
         const result = [];
         for(let i=0; i<7; i++) {
@@ -44,6 +44,7 @@ export default class SettingsWindow extends React.Component {
         return result;
     }
 
+    // prefix here is either 'l' or 'r' to reach either <input id={"l"+i+"0"} or <input id={"r"+i+"0"} to push the value into
     calibrationArray2Form(prefix, arrayOfSubArrays) {
         for(let i=0; i<7; i++) {
             const calibRaw = arrayOfSubArrays[i];
@@ -53,12 +54,13 @@ export default class SettingsWindow extends React.Component {
         }
     }
 
+    // Traverses through all element inside the HTML form and shoves all the values
     completeSettingsFromForm() {
         const settings = {};
         settings.Home_X =parseInt(document.getElementById("homeCoordXNumber").value);
         settings.Home_Y = parseInt(document.getElementById('homeCoordYNumber').value);
         settings.ReturnHome = document.getElementById('returnHomeCheckBox').checked;
-        settings.WhoStarts = document.getElementById('YourRoverRB').checked;
+        settings.WhoStarts = document.getElementById('WhoStarts').checked;
         settings.Serve_X = parseInt(document.getElementById('servingCoordXNumber').value);
         settings.Serve_Y = parseInt(document.getElementById('servingCoordYNumber').value);
         settings.OpponentServesNow = this.state.OpponentServesNow;
@@ -66,31 +68,32 @@ export default class SettingsWindow extends React.Component {
         const calibrationRight = this.form2DCalibrationArray('r');
         settings.speed2LeftDegreeArray = calibrationLeft;
         settings.speed2RightDegreeArray = calibrationRight;
+
+        settings.WhoStarts = document.getElementById("WhoStarts").checked;
+        settings.ReturnHomedocument = document.getElementById("returnHomeCheckBox").cheched;
+
         return settings;
     }
 
 
     settingsSaved() {
-//TODO move this function into commons        this.showInfoMessage("Settings saved successfully");
-        console.log("The setting were successfully saved");
-
+        this.props.infoMessageSender("The setting were successfully saved");
     }
 
     settingsFailed(reason) {
-//TODO move this function into commons         this.showErrorMessage("Setting storage failed because of "+reason);
-         console.log("The setting storage failed because of "+reason);
+        this.props.errorMessageSender(`The setting storage failed because of "${reason}"`);
     }
 
+// We cannot just continue here until the parental 'Court' class invokes 'Setting' button because otherwise we do not
+// have
     componentDidMount() {
-        this.timerID = setInterval(
+        this.timerID = setInterval( // It is sort of delayed initialization
             () => this.waitForSecurityToken(),
             1000
         );
-
-        console.log("I am in Mount");
     }
 
-    waitForSecurityToken() {
+    waitForSecurityToken() { // Waiting until the securityToken gets set some value and only after it makes sense
         if(this.props.SecurityToken != null && this.props.SecurityToken != undefined) {
             this.settingsCommunication.getSettings(this.props.SecurityToken);
             if(this.timerID != null) clearInterval(this.timerID);
@@ -99,22 +102,24 @@ export default class SettingsWindow extends React.Component {
     }
 
     componentWillUnmount() {
-        if(this.timerID != null) clearInterval(this.timerID);
+        if(this.timerID != null) clearInterval(this.timerID); // Destroying the timer created in the componentDidMount
     }
 
+    // This method is being invoked as a callback from  waitForSecurityToken() this.settingsCommunication.getSettings(this.props.SecurityToken)
     settingsRetrieved(settingsAsJson) {
-        console.log("settingsAsJson.HOME_Y=>"+settingsAsJson.Home_Y);
-        this.setState({"Home_X ": settingsAsJson.Home_X});
+        this.setState({"Home_X": settingsAsJson.Home_X});
         this.setState({"Home_Y": settingsAsJson.Home_Y});
         this.setState({"ReturnHome": settingsAsJson.ReturnHome});
         this.setState({"WhoStarts": settingsAsJson.WhoStarts});
         this.setState({"Serve_X": settingsAsJson.Serve_X});
         this.setState({"Serve_Y": settingsAsJson.Serve_Y});
-        this.setState({"OpponentServesNow" : settingsAsJson.OpponentServesNow});
         this.setState({"speed2LeftDegreeArray": settingsAsJson.speed2LeftDegreeArray});
         this.setState({"speed2RightDegreeArray": settingsAsJson.speed2RightDegreeArray});
         this.calibrationArray2Form("l", settingsAsJson.speed2LeftDegreeArray);
         this.calibrationArray2Form("r", settingsAsJson.speed2RightDegreeArray);
+
+        document.getElementById("WhoStarts").checked = settingsAsJson.WhoStarts;
+        document.getElementById("returnHomeCheckBox").checked = settingsAsJson.ReturnHome;
 
         this.showInfoMessage("Settings successfully loaded");
 
@@ -126,6 +131,7 @@ export default class SettingsWindow extends React.Component {
 
     settingsRetrievalFailed(reason) {
         console.log("SettingsRetrieval failed => "+reason);
+        this.props
 // TODO: Move into commons  this.showInfoMessage(`Settings are getting the default values`);
     }
 
@@ -182,15 +188,13 @@ export default class SettingsWindow extends React.Component {
         }
     }
 
-
     handleSettingsSubmitClick(e) {
         e.preventDefault();
         this.state = this.completeSettingsFromForm();
         this.settingsCommunication.saveSettings(this.props.SecurityToken, this.state);
+        e.settingState = this.state; // Very dirty hack but I do not know any better idea to send children's changes up to the parent
         this.props.handleSettingsSubmitClick(e);
     }
-
-
 
     render() {
         const calibRowsLeft = [];
@@ -224,13 +228,9 @@ export default class SettingsWindow extends React.Component {
             <div id="SettingsWindow">
                 <form>
                     <p>Who starts:</p>
-                    <label id="yourRoverLabel" htmlFor="YourRoverRB">Your rover</label><input id="YourRoverRB"
-                                                                                              name="whoStarts"
-                                                                                              type="radio"/>
-                    <label id="yourOpponentLabel" htmlFor="YourOpponentRB">Your Opponent</label><input id="YourOpponentRB"
-                                                                                                    name="whoStarts"
-                                                                                                    type="radio"
-                                                                                                    defaultChecked={this.state.WhoStarts} />
+                    <label id="WhoStartsHomeLabel" htmlFor="WhoStartsCheckBox">Rover starts:</label><input
+                                                                                                   id="WhoStarts"
+                                                                                                   type="checkbox"/>
 
                     <p>Serving from coordinates:</p>
                     <div>
@@ -256,7 +256,7 @@ export default class SettingsWindow extends React.Component {
                                                                                                defaultValue={this.state.Home_X}></input>
                     </div>
                     <div>
-                        <label id="homeCoordYLabel" htmlFor="servingYNumber">Y:</label><input id="homeCoordYNumber"
+                        <label id="homeCoordYLabel" htmlFor="homeCoordYNumber">Y:</label><input id="homeCoordYNumber"
                                                                                               type="number"
                                                                                               min="600"
                                                                                               max="1200"
@@ -265,9 +265,7 @@ export default class SettingsWindow extends React.Component {
                     <div>
                         <label id="returnHomeLabel" htmlFor="returnHomeCheckBox">Return home after each shot:</label><input
                                 id="returnHomeCheckBox"
-                                type="checkbox"
-                                defaultChecked={this.state.ReturnHome}
-                                />
+                                type="checkbox"/>
                     </div>
                     <div>
                         <div>

@@ -62,8 +62,11 @@ export default class RouteMaker {
     }
 
     /* A shadow function of the Court handler */
-    handleClick(currentX, currentY, mouseX, mouseY) {
+    handleClick(currentX, currentY, mouseX, mouseY, returnHome) {
         this.route = this.routeBuilder(currentX, currentY, mouseX, mouseY);
+        if(returnHome && this.findSides(currentX, currentY, mouseX, mouseY)==this.ON_SAME_SIDE) {
+            this.route.push({x:currentX, y:currentY});
+        }
         let vectorStart = this.route.shift();
         let x1 = vectorStart.x;
         let y1 = vectorStart.y;

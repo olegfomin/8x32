@@ -121,7 +121,7 @@ export default class Court extends React.Component {
         if (this.state.isConnected) { // Rover should move now
             if(this.state.isValidSpace) {
                 let xy = this.getMousePos(this.canvas, event);
-                this.routeMaker.handleClick(this.state.Current_X, this.state.Current_Y, xy.x, xy.y);
+                this.routeMaker.handleClick(this.state.Current_X, this.state.Current_Y, xy.x, xy.y, this.state.ReturnHome);
             } else {
                 this.showErrorMessage("The invalid target position. Please move cursor");
             }
@@ -150,11 +150,20 @@ export default class Court extends React.Component {
         this.setState({"EditInProcess": true});
     }
 
-// Settings form completed
+// Settings form completed (the child has embedded the settings into this event)
     handleSettingsSubmitClick(event) {
         event.preventDefault();
         this.setState({"EditInProcess": false});
         this.sw.style.display = "none"; // Making setting window invisible
+        const settingState=event.settingState;
+        this.setState({"Home_X" : settingState.Home_X});
+        this.setState({"Home_y" : settingState.Home_Y});
+        this.setState({"ReturnHome" : settingState.ReturnHome});
+        this.setState({"WhoStarts" : settingState.WhoStarts});
+        this.setState({"Serve_X" : settingState.Serve_X});
+        this.setState({"Serve_Y" : settingState.Serve_Y});
+        this.setState({"speed2LeftDegreeArray" : settingState.speed2LeftDegreeArray});
+        this.setState({"speed2RightDegreeArray" : settingState.speed2RightDegreeArray});
     }
 
     handleAboutClick(event) {
@@ -367,7 +376,9 @@ export default class Court extends React.Component {
           <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
           <SettingsWindow handleSettingsSubmitClick={this.handleSettingsSubmitClick}
                             SecurityToken={this.state.SecurityToken}
-                            isConnected={this.state.isConnected}/>
+                            isConnected={this.state.isConnected}
+                            infoMessageSender={this.showInfoMessage}
+                            errorMessageSender={this.showErrorMessage} />
 
 
           <AboutWindow handleAboutClick={this.handleAboutSubmitClick}/>

@@ -9,7 +9,6 @@ export default class SettingsCommunication {
 
     saveSettings(token, settings) {
         const settingsAsString = JSON.stringify(settings);
-        console.log("saveSettings "+token+" was called");
         const requestOptions = {
             method: 'PUT',
             headers: {
@@ -23,7 +22,6 @@ export default class SettingsCommunication {
         fetch('settings', requestOptions) // Calling the authentication server
             .then(response => {
                 if (response.status == 200) {
-                    console.log("response.status saved settingsSaved called");
                     this.settingsWindow.settingsSaved();
                 }
                 else this.settingsWindow.settingsFailed(response.status);
@@ -34,6 +32,7 @@ export default class SettingsCommunication {
 
     }
 
+    // Calling the web-site to retrieve all the values for the given token
     getSettings(token) {
         const requestOptions = {
             method: 'GET',
@@ -60,5 +59,4 @@ export default class SettingsCommunication {
                 that.settingsWindow.settingsRetrievalFailed(e);
             });
     }
-
 }
