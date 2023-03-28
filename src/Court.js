@@ -8,6 +8,9 @@ import {Buffer} from 'buffer';
 import RouteMaker from "./RouteMaker";
 import ControlPanel from "./ControlPanel";
 import RemoteCommunication from "./RemoteCommunication"
+import SettingCommunicationAdapter from "./SettingCommunicationAdapter";
+import SettingsCommunication from "./SettingsCommunication";
+import WebSocketHandler from "./WebSocketHandler";
 
 export default class Court extends React.Component {
     BASE_URL = "ws://www.roboticrover.com:5000/"
@@ -27,6 +30,7 @@ export default class Court extends React.Component {
         this.remoteCommunication = new RemoteCommunication(this);
         this.xOffset = 0; // Temporary setting/declaring this variable to zero they will take their correct value
         this.yOffset = 0; // when component mounts
+        this.webSocketHandler = new WebSocketHandler(this);
 
         this.routeMaker = new RouteMaker(this);
         this.handleLoginCallback = this.handleLoginCallback.bind(this);
@@ -43,9 +47,17 @@ export default class Court extends React.Component {
         this.showInfoMessage = this.showInfoMessage.bind(this);
         this.showErrorMessage = this.showErrorMessage.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.settingsRetrieved = this.settingsRetrieved.bind(this);
+        this.login2DeviceFailed=this.login2DeviceFailed.bind(this);
+        this.login2DeviceSucceeded=this.login2DeviceSucceeded.bind(this);
+        this.connectedToDevice=this.connectedToDevice.bind(this);
+        this.coordinatesReceivedByDevice = this.coordinatesReceivedByDevice.bind(this);
+        this.loggedOffFromDevice = this.loggedOffFromDevice.bind(this);
+        this.deviceFailed = this.deviceFailed.bind(this);
+        const settingCommunicationAdapter = new SettingCommunicationAdapter(this);
+        this.settingsCommunication = new SettingsCommunication(settingCommunicationAdapter);
 
-
-          this.state = {
+        this.state = {
             "LoggedIn": false,
             "SecurityToken": null,
             "LastSecurityTokenUpdate": 0,
@@ -60,13 +72,11 @@ export default class Court extends React.Component {
             "ReturnHome": false, // Indicates whether rover head towards Home coordinates above
             "WhoStarts": false, // Defines who starts either your rover or the opponent on the other side of the court
             "OpponentServesNow": true, // If Return Home is true then we put the rover into Home_X, Home_y coordinates otherwise we'll ask the
-            "ConnectionInProcess": false, // The connection with rover's being established
-            "isConnected": false, // The connection with a rover has been established
             "EditInProcess": false, // in this case we disable all the other buttons so it is not possible to have cascading windows that exceed the screen size
             "isValidSpace": false,
             "HeartBeatAgentId": "",
-            "isConnected2Socket": false,
-            "wsConnected": false,
+            "wsConnecting" : false,
+            "wsConnected": false, // The connection with rover's being established
             "wsLoggedIn": false,
             "speed2LeftDegreeArray":[[]],
             "speed2RightDegreeArray":[[]]
@@ -118,7 +128,7 @@ export default class Court extends React.Component {
 // was clicked on. It may become a route of several vectors if the current position of the rover is
 // located on the opposite side of the net
     handleClick(event) {
-        if (this.state.isConnected) { // Rover should move now
+        if (this.state.wsConnected) { // Rover should move now
             if(this.state.isValidSpace) {
                 let xy = this.getMousePos(this.canvas, event);
                 this.routeMaker.handleClick(this.state.Current_X, this.state.Current_Y, xy.x, xy.y, this.state.ReturnHome);
@@ -186,7 +196,7 @@ export default class Court extends React.Component {
         const enclosedY = this.isInsideDmz(xy.x, xy.y) || this.isYOutsideCourt(xy.y) ? "Out" : Math.round(xy.y);
         if(enclosedX === "Out" || enclosedY === "Out") this.setState({isValidSpace: false});
         else this.setState({isValidSpace: true});
-        if(this.state.LoggedIn && this.state.isConnected && !this.state.EditInProcess)
+        if(this.state.LoggedIn && this.state.wsConnected && !this.state.EditInProcess)
             this.statusBar.innerHTML = `X=${enclosedX}`+`  Y=${enclosedY}`;
     }
 // This is a flip-flop button that originally has a 'Start' label but as soon as connection with the device is
@@ -195,42 +205,41 @@ export default class Court extends React.Component {
         console.log("handleStartClick = "+event.data+" this.state.wsConnected="+this.state.wsConnected);
         if(this.state.wsConnected) { // If it is already connected then disconnect the rover
             this.showInfoMessage("Disconnecting ...");
-            this.setState({"ConnectionInProcess": false});
-            this.setState({"isConnected": false});
+            this.setState({"wsConnecting": false});
             this.setState({"Current_X": this.state.Home_X});
             this.setState({"Current_Y": this.state.Home_Y});
             drawACourt(this.ctx);
             this.setState({"wsConnected" : false});
         } else { // if the rover connecting the fun begins
-            const socket = new WebSocket(this.BASE_URL+"wslogin",'ws');
-            socket.onopen = (e) => {
-                console.log("Connected to web-socket "+event.data);
-                socket.send(this.state.SecurityToken);
-                this.setState({"ConnectionInProcess": true});
-            };
-
-            socket.onmessage = (event) => {
-                if(this.state.ConnectionInProcess && event.data.startsWith("Success")) {
-                    this.setState({wsConnected : true});
-
-                    this.showInfoMessage("Connected ...");
-                    this.setState({"ConnectionInProcess": false});
-                    this.setState({"isConnected": true});
-                    this.setState({"Current_X": this.state.Home_X});
-                    this.setState({"Current_Y": this.state.Home_Y});
-                    // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
-                    window.addEventListener('mousemove', this.handleMouseMove);
-
-                    this.statusBar.innerHTML = "Point the area where the rover must go";
-                    window.scrollTo(0, 500); // Rolling the scroller to the end
-                    this.redrawPicture(this.state.Current_X, this.state.Current_Y);
-                } else {
-                    this.setState({wsConnected : false});
-                    this.showErrorMessage("Cannot Connect "+event.data);
-                }
-            };
+            this.webSocketHandler.login(this.state.SecurityToken);
         }
     };
+
+  login2DeviceFailed(message) {
+     this.showErrorMessage("Device login failed due to '"+message+"'");
+  }
+
+  login2DeviceSucceeded() {
+      this.showInfoMessage("Device login succeeded");
+      this.setState({"wsConnected" : true});
+
+  }
+
+  connectedToDevice() {
+
+  }
+
+  coordinatesReceivedByDevice() {
+
+  }
+
+  loggedOffFromDevice() {
+
+  }
+
+  deviceFailed(message) {
+
+  }
 
   heartBeat(securityToken) {
     const heartBeatAgentId = this.remoteCommunication.heartBeat(securityToken);
@@ -268,16 +277,28 @@ export default class Court extends React.Component {
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
     this.heartBeat(securityToken);
 
+    this.settingsCommunication.getSettings(securityToken);
+
     this.setState({
-         "LoggedIn": true
+         "LoggedIn": true,
     });
 
     this.statusBar.style.color = "black";
     this.statusBar.style["font-weight"] = "normal";
     this.statusBar.innerHTML = "The system is ready to operate";
     this.lw.style.display="none";
-    console.log("calling this.remoteCommunication.getSettings(securityToken)");
   };
+
+  settingsRetrieved(json) {
+      this.setState({"Home_X" : json.Home_X});
+      this.setState({"Home_y" : json.Home_Y});
+      this.setState({"ReturnHome" : json.ReturnHome});
+      this.setState({"WhoStarts" : json.WhoStarts});
+      this.setState({"Serve_X" : json.Serve_X});
+      this.setState({"Serve_Y" : json.Serve_Y});
+      this.setState({"speed2LeftDegreeArray" : json.speed2LeftDegreeArray});
+      this.setState({"speed2RightDegreeArray" : json.speed2RightDegreeArray});
+  }
 
   // Handle the non 200 response from the authentication service
   failedLogin(e) {
@@ -361,7 +382,6 @@ export default class Court extends React.Component {
         <div id="motherPanel" className="center" height="1300" width="700">
           <ControlPanel EditInProcess = {this.state.EditInProcess}
                         LoggedIn = {this.state.LoggedIn}
-                        connected = {this.state.isConnected}
                         wsConnected = {this.state.wsConnected}
                         loginClicked = {this.handleLoginClick}
                         settingClicked = {this.handleSettingsClick}
@@ -376,7 +396,6 @@ export default class Court extends React.Component {
           <LoginWindow callBackFunction={this.handleLoginCallback}></LoginWindow>
           <SettingsWindow handleSettingsSubmitClick={this.handleSettingsSubmitClick}
                             SecurityToken={this.state.SecurityToken}
-                            isConnected={this.state.isConnected}
                             infoMessageSender={this.showInfoMessage}
                             errorMessageSender={this.showErrorMessage} />
 

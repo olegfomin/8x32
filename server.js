@@ -145,38 +145,58 @@ app.get('/user', function(request, response) {
     response.send(listOfUsers);
 });
 
-app.ws('/wslogin', function(ws, req) {
-    ws.on('message', function(token) {
-        if(wsAuthToken == null) {
-            wsUserName = authentication.token2UserNameMap[token];
-            if(wsUserName != null) {
-                wsDate = Date.now();
-                wsAuthToken = token;
-                console.log("Sent success");
-                ws.send("Success");
-            } else {
-                ws.send("Failure: Invalid security token provided");
-            }
-        } else {
-            if(token == wsAuthToken) {
-                ws.send("Success");
-                wsDate = Date.now();
-            } else {
-                const userNameRetrieved = authentication.token2UserNameMap[token];
-                if(userNameRetrieved === wsUserName) {
-                    wsAuthToken = token;
-                    ws.send("Success");
-                    wsDate = Date.now();
-                } else {
-                    ws.send(`Failure: The device is already used by '${wsUserName}'`);
-                }
-            }
+app.ws('/ws', function(ws, req) {
+    ws.on('open', function() {
+       console.log("Opening Web-Socket connection ...")
+    });
+    ws.on('message', function(jsonAsString) {
+        const commandAndPayload = JSON.parse(jsonAsString);
+        switch (commandAndPayload.command) {
+            case "login": app.loginFn(ws, commandAndPayload.token); break;
+            default: app.errorFn("Unknown command"+ commandAndPayload.command);
         }
+
     });
 });
-
 
 // start express server on port 5000
 app.listen(5000, () => {
     console.log("server started on port 5000");
 });
+
+app.loginFn = function(ws, token) {
+    if(wsAuthToken == null) {
+        wsUserName = authentication.token2UserNameMap[token];
+        if(wsUserName != null) {
+            wsDate = Date.now();
+            wsAuthToken = token;
+            console.log("Sent success");
+            ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
+        } else {
+            ws.send(JSON.stringify({"Command":"login", "Payload": "Invalid security token provided"}));
+        }
+    } else {
+        if(token == wsAuthToken) {
+            ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
+            wsDate = Date.now();
+        } else {
+            const userNameRetrieved = authentication.token2UserNameMap[token];
+            if(userNameRetrieved === wsUserName) {
+                wsAuthToken = token;
+                ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
+                wsDate = Date.now();
+            } else {
+                console.log("-------- The device is already used by ---------------------->");
+                ws.send(JSON.stringify({"Command":"login", "Payload": `The device is already used by '${wsUserName}'`}));
+            }
+        }
+    }
+}
+
+app.logoff = function(token) {
+
+}
+
+app.errorFn = function(err) {
+    console.log("An error occurred unknown command: "+err);
+}

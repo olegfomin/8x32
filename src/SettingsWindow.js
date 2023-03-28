@@ -126,15 +126,12 @@ export default class SettingsWindow extends React.Component {
     }
 
     showInfoMessage(msg) {
-        console.log(msg);
+        this.props.infoMessageSender(msg);
     }
 
     settingsRetrievalFailed(reason) {
-        console.log("SettingsRetrieval failed => "+reason);
-        this.props
-// TODO: Move into commons  this.showInfoMessage(`Settings are getting the default values`);
+        this.props.errorMessageSender(`Settings retrieval failed due to "${reason}"`)
     }
-
 
     speedIntoIndex(speed) {
         switch (speed) {
