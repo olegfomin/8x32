@@ -45,7 +45,7 @@ export default class WebSocketHandler {
 
     connectedToDevice(event) {
        const message = JSON.parse(event.data);
-       switch (message.command) {
+       switch (message.Command) {
            case("heartBeat"): this.court.connectedToDevice(); break;
            case("coordinatesReceived"): this.court.coordinatesReceivedByDevice(); break;
            case("loggedOff"): this.court.loggedOffFromDevice(); break;
@@ -53,11 +53,11 @@ export default class WebSocketHandler {
        }
     }
 
-    sendTargetCoordinates(x, y) {
-        this.socket.send(JSON.stringify(`{"command": "target", "payload":"${x}/${y}}", "token"=${this.token}`));
+    sendTargetCoordinates(xyArray) {
+        this.socket.send(`{"Command": "target", "Payload":${xyArray}, "token"=${this.token}`);
     }
 
     logout() {
-        this.socket.send(JSON.stringify(`{"command": "logoff", "payload":"Initiated by user", "token"=${this.token}`));
+        this.socket.send(JSON.stringify(`{"Command": "logoff", "Payload":"Initiated by user", "token"=${this.token}`));
     }
 }

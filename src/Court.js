@@ -54,6 +54,7 @@ export default class Court extends React.Component {
         this.coordinatesReceivedByDevice = this.coordinatesReceivedByDevice.bind(this);
         this.loggedOffFromDevice = this.loggedOffFromDevice.bind(this);
         this.deviceFailed = this.deviceFailed.bind(this);
+        this.deviceColor = false;
         const settingCommunicationAdapter = new SettingCommunicationAdapter(this);
         this.settingsCommunication = new SettingsCommunication(settingCommunicationAdapter);
 
@@ -222,11 +223,21 @@ export default class Court extends React.Component {
   login2DeviceSucceeded() {
       this.showInfoMessage("Device login succeeded");
       this.setState({"wsConnected" : true});
-
+      this.setState({wsConnected : true});
+      this.showInfoMessage("Connected ...");
+      this.setState({"ConnectionInProcess": false});
+      this.setState({"isConnected": true});
+      this.setState({"Current_X": this.state.Home_X});
+      this.setState({"Current_Y": this.state.Home_Y});
+      // Prints current mouse coordinates or 'Out' if the coordinate is larger than court size or too close to the net
+      window.addEventListener('mousemove', this.handleMouseMove);
+      this.statusBar.innerHTML = "Point the area where the rover must go";
+      window.scrollTo(0, 500); // Rolling the scroller to the end
+      this.redrawPicture(this.state.Current_X, this.state.Current_Y);
   }
 
   connectedToDevice() {
-
+      this.showInfoMessage("Device Heart Beat");
   }
 
   coordinatesReceivedByDevice() {
@@ -234,7 +245,7 @@ export default class Court extends React.Component {
   }
 
   loggedOffFromDevice() {
-
+      document.getElementById("loginWindow").innerText = "Connected";
   }
 
   deviceFailed(message) {
@@ -388,7 +399,7 @@ export default class Court extends React.Component {
                         aboutClicked = {this.handleAboutClick}
                         startClicked = {this.handleStartClick}
           />
-          <div id="statusBar">Please, click the 'Login' button to access the system</div>
+          <div id="statusBar">Please, click the 'Login' button to access the system <div id="device">Device</div></div>
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>

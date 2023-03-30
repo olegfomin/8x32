@@ -155,7 +155,6 @@ app.ws('/ws', function(ws, req) {
             case "login": app.loginFn(ws, commandAndPayload.token); break;
             default: app.errorFn("Unknown command"+ commandAndPayload.command);
         }
-
     });
 });
 
@@ -168,6 +167,12 @@ app.loginFn = function(ws, token) {
     if(wsAuthToken == null) {
         wsUserName = authentication.token2UserNameMap[token];
         if(wsUserName != null) {
+            // TODO Device must send these
+            setInterval(() => {
+                console.log("DEVICE SENT");
+                ws.send(JSON.stringify({"Command":"heartBeat", "Payload" : "Device is ok"}));
+            }, 3000);
+
             wsDate = Date.now();
             wsAuthToken = token;
             console.log("Sent success");
@@ -179,6 +184,11 @@ app.loginFn = function(ws, token) {
         if(token == wsAuthToken) {
             ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
             wsDate = Date.now();
+            // TODO Device must send these
+            setInterval(() => {
+               console.log("DEVICE SENT");
+               ws.send(JSON.stringify({"Command":"heartBeat", "Payload" : "Device is ok"}));
+            }, 3000);
         } else {
             const userNameRetrieved = authentication.token2UserNameMap[token];
             if(userNameRetrieved === wsUserName) {

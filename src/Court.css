@@ -59,6 +59,12 @@
   top: 60px
 }
 
+#device {
+  color: blue;
+  float: right;
+  min-width: 75px;
+}
+
 
 #submitButton {
   margin-top: 50px;
