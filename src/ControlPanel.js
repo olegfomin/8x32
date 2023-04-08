@@ -21,10 +21,13 @@ export default class ControlPanel extends React.Component {
                     <button id="aboutButton" onClick={this.props.aboutClicked}
                             disabled={this.props.EditInProcess}>About
                     </button>
+
                     <button id="startButton" onClick={this.props.startClicked}
                             disabled={!this.props.LoggedIn || this.props.EditInProcess}>
                         {this.props.wsConnected ? "Stop" : "Start"}
                     </button>
+
+                    <input type="number" id="ping" name="vol" min="0" max="5000" value="0" disabled="true"/>
                 </div>
             </div>
         )

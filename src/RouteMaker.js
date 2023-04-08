@@ -1,4 +1,5 @@
 import Court from "./Court";
+import WebSocketHandler from "./WebSocketHandler";
 
 /* This class creates a valid route on a tennis court from point A to point B taking into account that there is
 * a net across the court. Meaning that if the given points are located on the opposite sides of the court the rover go
@@ -33,8 +34,9 @@ export default class RouteMaker {
     HOW_MANY_JUMPS_A_SECOND= 20;
     DURATION_OF_EACH_JUMP  = 1000/this.HOW_MANY_JUMPS_A_SECOND;
 
-    constructor(court) {
+    constructor(court, webSocketHandler) {
         this.court = court;
+        this.webSocketHandler = webSocketHandler;
         this.route=null;
         this.x2 = null;
         this.y2 = null;
@@ -79,16 +81,20 @@ export default class RouteMaker {
     // Move a rover picture from one point to another in a straight line only
     moveRover(fromX, fromY, toX, toY, callback) {
         console.log("fromX= "+fromX+" fromY"+fromY+" toX="+toX+" toY"+toY);
+        let localRoute = [{"x":fromX, "y":fromY}];
+        localRoute.push()
         let counter=0;
         const stepX = Math.round((toX - fromX) / 20.0);
         const stepY = Math.round((toY - fromY) / 20.0);
         let currentX = fromX+stepX;
         let currentY = fromY+stepY;
         const intervalId = setInterval(() => {
+            localRoute.push({"x":currentX, "y": currentY});
             this.court.redrawPicture(currentX, currentY);
             currentX += stepX;
             currentY += stepY;
             if(counter >= this.HOW_MANY_JUMPS_A_SECOND-1) {
+                this.webSocketHandler.sendTargetCoordinates(localRoute); // Here is a bit of the spaghetty code as the communication should have somehow be conducted through Court.js
                 clearInterval(intervalId);
                 callback(null);
             }

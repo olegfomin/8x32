@@ -8,21 +8,21 @@ import Court from "./Court";
 export default class WebSocketHandler {
     constructor(court) {
         this.court = court;
-        this.socket = null;
+        this.browserSocket = null;
         this.token  = null;
         this.login = this.login.bind(this);
         this.loginResponseParser = this.loginResponseParser.bind(this);
         this.connectedToDevice = this.connectedToDevice.bind(this);
-        this.sendTargetCoordinates = this.sendTargetCoordinates.bind();
+        this.sendTargetCoordinates = this.sendTargetCoordinates.bind(this);
     }
 
-    login(token) {
-        this.socket = new WebSocket(this.court.BASE_URL+"ws",'ws');
-        this.socket.onopen = (e) => {
+    login(token, userName) {
+        this.browserSocket = new WebSocket(this.court.BASE_URL+"browser",'ws');
+        this.browserSocket.onopen = (e) => {
             this.court.setState({"wsConnecting": true});
             this.court.showInfoMessage("Connecting to web-socket");
-            this.socket.onmessage = this.loginResponseParser;
-            this.socket.send(JSON.stringify({"command": "login", "payload": token, "token": token}));
+            this.browserSocket.onmessage = this.loginResponseParser;
+            this.browserSocket.send(JSON.stringify({"Command": "login", "Payload": userName, "token": token}));
             this.token = token;
         };
 
@@ -33,7 +33,7 @@ export default class WebSocketHandler {
         if(message.Command == "login") {
             if(message.Payload == "Success") {
                 this.court.login2DeviceSucceeded();
-                this.socket.onmessage = this.connectedToDevice;
+                this.browserSocket.onmessage = this.connectedToDevice;
             } else {
                 this.court.login2DeviceFailed("The login failed due to '"+message.Payload+"'");
             }
@@ -43,10 +43,16 @@ export default class WebSocketHandler {
 
     }
 
+    heartBeat(userName, token) {
+        this.browserSocket.send({"Command": "heartBeat", "Payload":userName, "token": token});
+    }
+
+
+
     connectedToDevice(event) {
        const message = JSON.parse(event.data);
        switch (message.Command) {
-           case("heartBeat"): this.court.connectedToDevice(); break;
+           case("heartBeat"): this.court.connectedToDevice(message); break;
            case("coordinatesReceived"): this.court.coordinatesReceivedByDevice(); break;
            case("loggedOff"): this.court.loggedOffFromDevice(); break;
            default: this.court.deviceFailed(`Unknown device command: '${message.command}'`);
@@ -54,10 +60,10 @@ export default class WebSocketHandler {
     }
 
     sendTargetCoordinates(xyArray) {
-        this.socket.send(`{"Command": "target", "Payload":${xyArray}, "token"=${this.token}`);
+        this.browserSocket.send(JSON.stringify({"command": "targetCoordinates", "Payload":xyArray, "token": this.token}));
     }
 
     logout() {
-        this.socket.send(JSON.stringify(`{"Command": "logoff", "Payload":"Initiated by user", "token"=${this.token}`));
+        this.browserSocket.send(JSON.stringify(`{"command": "logoff", "Payload":"Initiated by user", "token"="${this.token}"}}`));
     }
 }

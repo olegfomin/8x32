@@ -16,15 +16,16 @@ export default class RemoteCommunication {
     // Logs into the system and returns the security token in callback
     login(userName, password) {
         const encodedString = Buffer.from(`${userName}:${password}`).toString('base64');
+        const command = `{"Command": "${userName}", "Payload": "${userName}"}`;
         const requestOptions = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': '2',
-                'Accept': '*/*',
+                'Content-Length': command.length,
+                'Accept': 'application/json',
                 'authorization': 'Basic ' + encodedString
             },
-            body: JSON.stringify({})
+            body: command
         };
         fetch('auth', requestOptions) // Calling the authentication server
             .then(response => {
@@ -36,32 +37,20 @@ export default class RemoteCommunication {
             });
     }
 
-
-
-
-/*    sendCoordinates(token, xy) {
-
-    } */
-
-
-    heartBeat(token) {
-        console.log("token="+token);
-        const heartBeatAgentId = setInterval( () => {
-            const requestOptions = {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json',
-                    'Content-Length': '2',
-                    'Accept': '*/*',
-                    'security-token': token
-                },
-                body: JSON.stringify({})
-            };
-            fetch('heart-beat', requestOptions) // Calling the authentication server
-                .then(response => {if(response.status == 200) {this.currentFailedHeartBeats=0}
-                                   else {this.failedHeartBeatResponseCounter()}})
-                .catch(e=>{this.failedHeartBeatResponseCounter()});
-        }, 10000);
-        return heartBeatAgentId;
+    slowHeartBeat(token, userName) {
+        const message = {"Command":"heartBeat", "Payload":userName, "token": token};
+        const messageAsStr= JSON.stringify(message);
+        const requestOptions = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json',
+                'Content-Length': messageAsStr.length,
+                'Accept': '*/*',
+                'security-token': token
+            },
+            body: messageAsStr
+        };
+        fetch('heart-beat', requestOptions) // Calling the authentication server
+            .catch(e=>{this.failedHeartBeatResponseCounter()});
     }
 
 
@@ -93,7 +82,7 @@ export default class RemoteCommunication {
     failedHeartBeatResponseCounter() {
         this.currentFailedHeartBeats++;
         if(this.currentFailedHeartBeats >  this.MAX_FAILED_HEARTBEATS) {
-           this.court.heartBeatsFailed();
+           this.court.slowHeartBeatsFailed();
             this.currentFailedHeartBeats=0
         }
     }

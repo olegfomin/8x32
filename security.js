@@ -24,7 +24,7 @@ class Authentication {
         this.validateAndRefresh = this.validateAndRefresh.bind(this);
         this.isUserNameInTokenList = this.isUserNameInTokenList.bind(this);
 
-        setInterval(this.purge, this.SESSION_DURATION/3); // runs every hour and clears all usernames whose session is expired
+        setInterval(this.purge, this.SESSION_DURATION*10); // runs every hour and clears all usernames whose session is expired
         setTimeout(this.load, 1000);
     }
 

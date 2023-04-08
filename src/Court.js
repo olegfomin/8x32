@@ -11,6 +11,7 @@ import RemoteCommunication from "./RemoteCommunication"
 import SettingCommunicationAdapter from "./SettingCommunicationAdapter";
 import SettingsCommunication from "./SettingsCommunication";
 import WebSocketHandler from "./WebSocketHandler";
+const uuid = require('uuid');
 
 export default class Court extends React.Component {
     BASE_URL = "ws://www.roboticrover.com:5000/"
@@ -32,7 +33,7 @@ export default class Court extends React.Component {
         this.yOffset = 0; // when component mounts
         this.webSocketHandler = new WebSocketHandler(this);
 
-        this.routeMaker = new RouteMaker(this);
+        this.routeMaker = new RouteMaker(this, this.webSocketHandler);
         this.handleLoginCallback = this.handleLoginCallback.bind(this);
         this.handleAboutClick = this.handleAboutClick.bind(this);
         this.handleLoginClick = this.handleLoginClick.bind(this);
@@ -54,6 +55,9 @@ export default class Court extends React.Component {
         this.coordinatesReceivedByDevice = this.coordinatesReceivedByDevice.bind(this);
         this.loggedOffFromDevice = this.loggedOffFromDevice.bind(this);
         this.deviceFailed = this.deviceFailed.bind(this);
+        this.pingMonitor = this.pingMonitor.bind(this);
+        this.slowHeartBeatsFailed = this.slowHeartBeatsFailed.bind(this);
+        this.heartBeatsFailed = this.heartBeatsFailed.bind(this);
         this.deviceColor = false;
         const settingCommunicationAdapter = new SettingCommunicationAdapter(this);
         this.settingsCommunication = new SettingsCommunication(settingCommunicationAdapter);
@@ -80,7 +84,9 @@ export default class Court extends React.Component {
             "wsConnected": false, // The connection with rover's being established
             "wsLoggedIn": false,
             "speed2LeftDegreeArray":[[]],
-            "speed2RightDegreeArray":[[]]
+            "speed2RightDegreeArray":[[]],
+            "UserName": null,
+            "SlowHeartBeatAgentId": null
         };
     }
 
@@ -209,10 +215,14 @@ export default class Court extends React.Component {
             this.setState({"wsConnecting": false});
             this.setState({"Current_X": this.state.Home_X});
             this.setState({"Current_Y": this.state.Home_Y});
+            if(this.state.HeartBeatAgentId != null && this.state.HeartBeatAgentId != undefined) {
+                clearInterval(this.state.HeartBeatAgentId);
+                this.setState({"HeartBeatAgentId":null});
+            }
             drawACourt(this.ctx);
             this.setState({"wsConnected" : false});
         } else { // if the rover connecting the fun begins
-            this.webSocketHandler.login(this.state.SecurityToken);
+            this.webSocketHandler.login(this.state.SecurityToken, this.state.UserName);
         }
     };
 
@@ -233,11 +243,25 @@ export default class Court extends React.Component {
       window.addEventListener('mousemove', this.handleMouseMove);
       this.statusBar.innerHTML = "Point the area where the rover must go";
       window.scrollTo(0, 500); // Rolling the scroller to the end
-      this.redrawPicture(this.state.Current_X, this.state.Current_Y);
+      this.redrawPicture(this.state.Home_X, this.state.Home_Y);
+      // Starting the heartbeat here, it will stop at device logoff
+      const token = this.state.SecurityToken;
+      const intervalId = setInterval(() => {
+          this.pingSent = Date.now();
+          this.webSocketHandler.heartBeat(token, this.state.UserName);
+      }, 1000);
+
+      this.setState({"HeartBeatAgentId": intervalId});
+
+
   }
 
-  connectedToDevice() {
-      this.showInfoMessage("Device Heart Beat");
+  connectedToDevice(message) {
+  }
+
+  pingMonitor(response) {
+     let interval = Date.now()-this.pingSent;
+     this.ping.value = interval;
   }
 
   coordinatesReceivedByDevice() {
@@ -253,13 +277,38 @@ export default class Court extends React.Component {
   }
 
   heartBeat(securityToken) {
-    const heartBeatAgentId = this.remoteCommunication.heartBeat(securityToken);
-    this.setState({"HeartBeatAgentId": heartBeatAgentId});
   }
 
   heartBeatsFailed() {
-      this.showErrorMessage(`The last ${this.remoteCommunication.MAX_FAILED_HEARTBEATS} consecutive heart beats failed `);
+      this.showErrorMessage(`The last ${this.remoteCommunication.MAX_FAILED_HEARTBEATS} consecutive heart beats failed`);
+      this.loggedOffFromDevice();
+      this.setState({"LoggedIn":     false,
+                      "SecurityToken": null});
+      if(this.state.HeartBeatAgentId != null && this.state.HeartBeatAgentId != undefined) {
+          clearInterval(this.state.SlowHeartBeatAgentId);
+          this.setState({"HeartBeatAgentId":null});
+      }
   }
+
+  slowHeartBeatsFailed() {
+      this.showErrorMessage(`The last ${this.remoteCommunication.MAX_FAILED_HEARTBEATS} consecutive heart beats failed`);
+      this.loggedOffFromDevice();
+      const savedToken = this.state.SecurityToken;
+      this.setState({"LoggedIn":     false,
+          "SecurityToken": null});
+      if(this.state.SlowHeartBeatAgentId != null && this.state.SlowHeartBeatAgentId != undefined) {
+          clearInterval(this.state.SlowHeartBeatAgentId);
+          this.setState({"SlowHeartBeatAgentId": null});
+      }
+      this.remoteCommunication.logoff();
+      this.state({
+         "LoggedIn": false,
+         "SlowHeartBeatAgentId": null,
+         "SecurityToken": null,
+         "UserName": null
+      });
+  }
+
 
   /* Handles the tap on the "Submit" button on the Login screen. This is quite complex method that works as a
   * toggle switch thus if you are logged off then this button serves as LoginButton otherwise if you are
@@ -269,12 +318,14 @@ export default class Court extends React.Component {
     if(!this.state.LoggedIn) { // The application is in logoff state right now and it is needed to get logged in
         const userName = document.getElementById("username").value;
         const password = document.getElementById("password").value;
+        this.setState({"UserName": userName});
         this.remoteCommunication.login(userName, password); // It is remote call but it is encapsulated inside remoteCommunication
                                                             // that calls "successfulLogin" or "failedLogin" respectively
 
     } else {
         // Logoff here because the system is logged in already presumably
         // first off all lets switch off the heart beat
+        this.setState({"UserName": null});
         this.remoteCommunication.logoff(this.state.SecurityToken, this.state.HeartBeatAgentId);
     }
   }
@@ -298,6 +349,14 @@ export default class Court extends React.Component {
     this.statusBar.style["font-weight"] = "normal";
     this.statusBar.innerHTML = "The system is ready to operate";
     this.lw.style.display="none";
+    // Starting slow heart Beat here to keep HTTP session alive
+    const slowHeartBeatAgentId = setInterval(() => {
+            this.remoteCommunication.slowHeartBeat(this.state.SecurityToken,
+                                                   this.state.UserName);
+        },
+        10000
+    );
+    this.setState({"SlowHeartBeatAgentId" : slowHeartBeatAgentId});
   };
 
   settingsRetrieved(json) {
@@ -316,6 +375,7 @@ export default class Court extends React.Component {
       this.setState({
           "LoggedIn": false
       });
+      this.setState({"UserName": null});
       this.showErrorMessage("Login failed "+e);
   }
 
@@ -352,6 +412,7 @@ export default class Court extends React.Component {
       this.lw = document.getElementById("loginWindow");
       this.sw = document.getElementById("SettingsWindow");
       this.lb = document.getElementById("loginButton");
+      this.ping = document.getElementById("ping");
 
 
       this.xOffset = this.canvas.offsetLeft;
@@ -399,7 +460,7 @@ export default class Court extends React.Component {
                         aboutClicked = {this.handleAboutClick}
                         startClicked = {this.handleStartClick}
           />
-          <div id="statusBar">Please, click the 'Login' button to access the system <div id="device">Device</div></div>
+          <div id="statusBar">Please, click the 'Login' button to access the system</div>
           <canvas id="myCanvas" className="center" height="1200" width="590" onClick={this.handleClick}>
             Your browser does not support the HTML canvas tag.
           </canvas>
