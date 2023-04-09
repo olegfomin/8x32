@@ -55,12 +55,12 @@ export default class Court extends React.Component {
         this.coordinatesReceivedByDevice = this.coordinatesReceivedByDevice.bind(this);
         this.loggedOffFromDevice = this.loggedOffFromDevice.bind(this);
         this.deviceFailed = this.deviceFailed.bind(this);
-        this.pingMonitor = this.pingMonitor.bind(this);
         this.slowHeartBeatsFailed = this.slowHeartBeatsFailed.bind(this);
-        this.heartBeatsFailed = this.heartBeatsFailed.bind(this);
+        this.heartBeatFailed = this.heartBeatFailed.bind(this);
         this.deviceColor = false;
         const settingCommunicationAdapter = new SettingCommunicationAdapter(this);
         this.settingsCommunication = new SettingsCommunication(settingCommunicationAdapter);
+        this.heartBeatToken2Date = {};
 
         this.state = {
             "LoggedIn": false,
@@ -245,23 +245,28 @@ export default class Court extends React.Component {
       window.scrollTo(0, 500); // Rolling the scroller to the end
       this.redrawPicture(this.state.Home_X, this.state.Home_Y);
       // Starting the heartbeat here, it will stop at device logoff
-      const token = this.state.SecurityToken;
       const intervalId = setInterval(() => {
-          this.pingSent = Date.now();
-          this.webSocketHandler.heartBeat(token, this.state.UserName);
+          const token = uuid.v4();
+          this.heartBeatToken2Date[token] = Date.now();
+          this.webSocketHandler.heartBeat(this.state.UserName, token);
       }, 1000);
 
       this.setState({"HeartBeatAgentId": intervalId});
+  }
 
+  heartBeatSuccessful(token) {
+      let when = this.heartBeatToken2Date[token];
+      let interval = Date.now()-when;
+      this.ping.value = interval;
+      delete this.heartBeatToken2Date[token];
+  }
 
+  heartBeatFailed(token) {
+      let when = this.heartBeatToken2Date[token];
+      if(when != null && when != undefined) delete this.heartBeatToken2Date[token];
   }
 
   connectedToDevice(message) {
-  }
-
-  pingMonitor(response) {
-     let interval = Date.now()-this.pingSent;
-     this.ping.value = interval;
   }
 
   coordinatesReceivedByDevice() {
@@ -274,20 +279,6 @@ export default class Court extends React.Component {
 
   deviceFailed(message) {
 
-  }
-
-  heartBeat(securityToken) {
-  }
-
-  heartBeatsFailed() {
-      this.showErrorMessage(`The last ${this.remoteCommunication.MAX_FAILED_HEARTBEATS} consecutive heart beats failed`);
-      this.loggedOffFromDevice();
-      this.setState({"LoggedIn":     false,
-                      "SecurityToken": null});
-      if(this.state.HeartBeatAgentId != null && this.state.HeartBeatAgentId != undefined) {
-          clearInterval(this.state.SlowHeartBeatAgentId);
-          this.setState({"HeartBeatAgentId":null});
-      }
   }
 
   slowHeartBeatsFailed() {
@@ -337,7 +328,6 @@ export default class Court extends React.Component {
     const securityToken = response.headers.get("security-token");
     this.setState({"SecurityToken" : securityToken});
     this.setState({"LastSecurityTokenUpdate" : Date.now()});
-    this.heartBeat(securityToken);
 
     this.settingsCommunication.getSettings(securityToken);
 
@@ -354,7 +344,7 @@ export default class Court extends React.Component {
             this.remoteCommunication.slowHeartBeat(this.state.SecurityToken,
                                                    this.state.UserName);
         },
-        10000
+        5000
     );
     this.setState({"SlowHeartBeatAgentId" : slowHeartBeatAgentId});
   };

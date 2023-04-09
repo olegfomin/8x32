@@ -37,7 +37,6 @@ app.post('/auth', function(request, response) {
         const token = authentication.authenticate(userName, password);
         response.header("security-token", token);
         response.status(200);
-        console.log("Payload Username=========> " + userName);
         response.send(JSON.stringify({"Command":"Login", "Payload": userName}));
     } catch(e) {
         console.log(e);
@@ -159,6 +158,9 @@ browserRouter.ws('/login', function (ws, req) {
                     wsAuthToken = commandAndPayload.token;
                     wsUserName =  commandAndPayload.Payload;
                     wsDate = Date.now();
+                    ws.send(`{"Command": "login", 
+                              "Payload": "Success",
+                              "token": "${commandAndPayload.token}"}`);
                 } else {
                     ws.send(`{"Command": "login", 
                               "Payload": "Failure: the token ${commandAndPayload.token} does not belong to the user ${wsUserName}",
@@ -187,7 +189,15 @@ browserRouter.ws('/coords', function(ws, req) {
 browserRouter.ws('/heartbeat', function(ws, req) {
     ws.on('message', function(jsonAsString) {
         const commandAndPayload = JSON.parse(jsonAsString);
-
+        if(commandAndPayload.Command == "heartBeat") {
+            ws.send(`{"Command": "heartBeat", 
+                      "Payload": "Success",
+                      "token": "${commandAndPayload.token}"}`);
+        } else {
+            ws.send(`{"Command": "heartBeat", 
+                      "Payload": "Failure: Invalid command name",
+                      "token": "${commandAndPayload.token}"}`);
+        }
     });
 });
 
@@ -205,7 +215,6 @@ const roverRouter = express.Router();
 roverRouter.ws('/login', function (ws, req) {
     ws.on('message', function(jsonAsString) {
         const commandAndPayload = JSON.parse(jsonAsString);
-
     });
 });
 
