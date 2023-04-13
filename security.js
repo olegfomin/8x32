@@ -121,6 +121,17 @@ class Authentication {
         }
     }
 
+    // decodes the virginAuthString from Base64 formatted virginAuthString and then parsing this string producing
+    // the output as follows {"userName": username, "password": password}
+    retrieveUserNameAndPassword(virginAuthString) {
+        const authHeader = Buffer.from(virginAuthString, 'base64').toString('ascii');
+        const colonPosition = authHeader.indexOf(":");
+        if (colonPosition < 0) throw new Error("Invalid Authorization header format. ':' is expected");
+        const userName = authHeader.substring(0, colonPosition);
+        const password = authHeader.substring(colonPosition + 1);
+        return {userName, password};
+    }
+
     // Traversing through the list of Token -> User line by line to find whether the user exists in this map
     isUserNameInTokenList(userName) {
        const userNameList = Object.values(this.token2UserNameMap);

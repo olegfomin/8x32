@@ -15,6 +15,7 @@ const uuid = require('uuid');
 
 export default class Court extends React.Component {
     BASE_URL = "ws://www.roboticrover.com:5000/"
+    HEART_BEAT_MAX_FAILURES = 10;
     X_DMZ_TOP_LEFT_COORD   = 70;
     Y_DMZ_TOP_LEFT_COORD   = 524;
     X_DMZ_BOTTOM_RIGHT_COORD = 500;
@@ -32,6 +33,7 @@ export default class Court extends React.Component {
         this.xOffset = 0; // Temporary setting/declaring this variable to zero they will take their correct value
         this.yOffset = 0; // when component mounts
         this.webSocketHandler = new WebSocketHandler(this);
+        this.heartBeatFailedCounter = 0;
 
         this.routeMaker = new RouteMaker(this, this.webSocketHandler);
         this.handleLoginCallback = this.handleLoginCallback.bind(this);
@@ -209,7 +211,6 @@ export default class Court extends React.Component {
 // This is a flip-flop button that originally has a 'Start' label but as soon as connection with the device is
 // established it'll become 'Stop' button.
     handleStartClick(event) {
-        console.log("handleStartClick = "+event.data+" this.state.wsConnected="+this.state.wsConnected);
         if(this.state.wsConnected) { // If it is already connected then disconnect the rover
             this.showInfoMessage("Disconnecting ...");
             this.setState({"wsConnecting": false});
@@ -259,11 +260,18 @@ export default class Court extends React.Component {
       let interval = Date.now()-when;
       this.ping.value = interval;
       delete this.heartBeatToken2Date[token];
+      this.heartBeatFailedCounter = 0; // Resetting the heart beat failed counter
   }
 
   heartBeatFailed(token) {
       let when = this.heartBeatToken2Date[token];
       if(when != null && when != undefined) delete this.heartBeatToken2Date[token];
+      this.showErrorMessage("The device ping has failed");
+      if(this.heartBeatFailedCounter >= this.HEART_BEAT_MAX_FAILURES) {
+          this.showErrorMessage("Too many failed heart beat attempts to the device");
+          this.handleStartClick({}); // At this point we are logging off from Start button
+      }
+      this.heartBeatFailedCounter++;
   }
 
   connectedToDevice(message) {
@@ -286,7 +294,7 @@ export default class Court extends React.Component {
       this.loggedOffFromDevice();
       const savedToken = this.state.SecurityToken;
       this.setState({"LoggedIn":     false,
-          "SecurityToken": null});
+                           "SecurityToken": null});
       if(this.state.SlowHeartBeatAgentId != null && this.state.SlowHeartBeatAgentId != undefined) {
           clearInterval(this.state.SlowHeartBeatAgentId);
           this.setState({"SlowHeartBeatAgentId": null});

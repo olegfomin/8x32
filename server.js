@@ -11,12 +11,21 @@ const app = express(); // create express app
 const expressWs = require('express-ws')(app); // We use the web-socket here to receive the real robot position coordinates
                                               // This will make black circle representing the real robot follow the planned one
 
+const {LoginRoverCommand, CoordsRoverCommand, HeartBeatRoverCommand, LogoffRoverCommand} = require("./RoverCommand");
+
+
 app.use(bodyParser.json());
 
 // There can be only one user which connected to device over the web-socket
 let wsAuthToken = null; // If null it means no one is controlling device
 let wsUserName = null; // Holding a user name as well. If user left the session without logging off
 let wsDate     = null; // Date and time when the socket was obtained
+let wsRoverRoute = [];
+let wsRoverConnected = false;
+let wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
+const wsRoverUserName = "rover"; // Rover user-name is rover
+let wsRoverLoginDate = null;
+
 
 app.use(express.static('build'));
 app.targetCoordArrayOfArrays = [];
@@ -29,11 +38,7 @@ app.post('/auth', function(request, response) {
         const basicPosition = virginHeaderBase64.indexOf("Basic");
         if (basicPosition < 0) throw new Error("No other but 'Basic' type of authentication is supported");
         const base64Part = virginHeaderBase64.substring(basicPosition + 6);
-        const authHeader = Buffer.from(base64Part, 'base64').toString('ascii');
-        const colonPosition = authHeader.indexOf(":");
-        if (colonPosition < 0) throw new Error("Invalid Authorization header format. ':' is expected");
-        const userName = authHeader.substring(0, colonPosition);
-        const password = authHeader.substring(colonPosition + 1);
+        const {userName, password} = authentication.retrieveUserNameAndPassword(base64Part);
         const token = authentication.authenticate(userName, password);
         response.header("security-token", token);
         response.status(200);
@@ -173,7 +178,7 @@ browserRouter.ws('/login', function (ws, req) {
             }
         } else {
             ws.send(`{"Command": "login", 
-                      "Payload": "Failure: the expected command is "login",
+                      "Payload": "Failure: the expected command is 'login'",
                       "token: ${commandAndPayload.token}"}`);
         }
     });
@@ -182,7 +187,21 @@ browserRouter.ws('/login', function (ws, req) {
 browserRouter.ws('/coords', function(ws, req) {
     ws.on('message', function(jsonAsString) {
         const commandAndPayload = JSON.parse(jsonAsString);
-
+        if(commandAndPayload.Command == "targetCoordinates") {
+            if(commandAndPayload.token == wsAuthToken) {
+                if(wsRoverConnected) {
+                    roverRouter.ws.send(jsonAsString);
+                }
+            } else {
+                ws.send(`{"Command": "targetCoordinates", 
+                          "Payload": "Failure: The incorrect security token has been provided",
+                          "token: ${commandAndPayload.token}"}`);
+            }
+        } else {
+            ws.send(`{"Command": "targetCoordinates", 
+                      "Payload": "Failure: the expected command is 'targetCoordinates' but it was '${commandAndPayload.Command}'",
+                      "token: ${commandAndPayload.token}"}`);
+        }
     });
 });
 
@@ -211,36 +230,56 @@ app.use("/browser", browserRouter);
 
 // The lines below are responsible for web-socket communication with device (rover)
 const roverRouter = express.Router();
+/* The set of command below allow sending the commands down below Web-Socket pipe and
+receive the asych responses as a respective method call
+ */
+const loginRoverCommand = new LoginRoverCommand(roverRouter);
+const coordsRoverCommand = new CoordsRoverCommand(roverRouter);
+const heartBeatRoverCommand = new HeartBeatRoverCommand(roverRouter);
+const logoffRoverCommand = new LogoffRoverCommand(roverRouter);
 
-roverRouter.ws('/login', function (ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
-    });
-});
+roverRouter.ws('/login', loginRoverCommand.shim);
+roverRouter.onLogin = function(commandAndPayload) {
+    if(commandAndPayload.Command == "login") {
+        try {
+            const authString = commandAndPayload.Payload;
+            const {userName, password} = authentication.retrieveUserNameAndPassword(authString)
+            const token = authentication.authenticate(userName, password);
+            // if web-browser user-name is not yet logged in then we want to display "Unknown" to the rover's screen
+            loginRoverCommand.send(`{"Command": "login", 
+                                     "Payload": wsUserName == null ? "Unknown" : wsUserName,
+                                     "token": "${token}"}`);
+            this.wsRoverAuthToken = token;
 
-roverRouter.ws('/coords', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
+        } catch (e) {
+            loginRoverCommand.send(`{"Command": "login", 
+                                     "Payload": Failure: ${e.message}`);
+            this.wsRoverAuthToken = null;
+        }
+    } else {
+        loginRoverCommand.send(`{"Command": "login", 
+                                 "Payload": "Failure: the expected command is 'login'"`);
+        this.wsRoverAuthToken = null;
+    }
+};
 
-    });
-});
+roverRouter.ws('/coords', coordsRoverCommand.shim);
+roverRouter.onCoordsReceived = (xy)=> {
+    // Somehow reflect this changes in real coordinates on the screen
 
-roverRouter.ws('/heartbeat', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
+};
 
-    });
-});
+roverRouter.ws('/heartbeat', heartBeatRoverCommand.shim);
+roverRouter.onHeartBeat = () => {
 
-roverRouter.ws('/logoff', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
+}
 
-    });
-});
+roverRouter.ws('/logoff', logoffRoverCommand.shim);
+roverRouter.onLogoff = function() {
+  console.log("I am a function");
+}
+
 app.use("/rover", roverRouter);
-
-
 
 
 // start express server on port 5000
@@ -302,3 +341,5 @@ app.logoff = function(token) {
 app.errorFn = function(err) {
     console.log("An error occurred unknown command: "+err);
 }
+
+module.exports=roverRouter;

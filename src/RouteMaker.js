@@ -80,21 +80,21 @@ export default class RouteMaker {
 
     // Move a rover picture from one point to another in a straight line only
     moveRover(fromX, fromY, toX, toY, callback) {
-        console.log("fromX= "+fromX+" fromY"+fromY+" toX="+toX+" toY"+toY);
-        let localRoute = [{"x":fromX, "y":fromY}];
-        localRoute.push()
-        let counter=0;
+        let fromXy = {"x":fromX, "y":fromY};
+        let toXy = {"x":toX, "y": toY};
+        let localRoute = [fromXy];
+        this.webSocketHandler.sendTargetCoordinates([fromXy, toXy]); // Here is a bit of the spaghetty code as the communication should have somehow be conducted through Court.js        let counter=0;
         const stepX = Math.round((toX - fromX) / 20.0);
         const stepY = Math.round((toY - fromY) / 20.0);
         let currentX = fromX+stepX;
         let currentY = fromY+stepY;
         const intervalId = setInterval(() => {
-            localRoute.push({"x":currentX, "y": currentY});
+            fromXy = {"x":currentX, "y": currentY};
+            localRoute.push(xy);
             this.court.redrawPicture(currentX, currentY);
             currentX += stepX;
             currentY += stepY;
             if(counter >= this.HOW_MANY_JUMPS_A_SECOND-1) {
-                this.webSocketHandler.sendTargetCoordinates(localRoute); // Here is a bit of the spaghetty code as the communication should have somehow be conducted through Court.js
                 clearInterval(intervalId);
                 callback(null);
             }
