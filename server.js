@@ -11,7 +11,7 @@ const app = express(); // create express app
 const expressWs = require('express-ws')(app); // We use the web-socket here to receive the real robot position coordinates
                                               // This will make black circle representing the real robot follow the planned one
 
-const {LoginRoverCommand, CoordsRoverCommand, HeartBeatRoverCommand, LogoffRoverCommand} = require("./RoverCommand");
+const {LoginCommand, CoordsCommand, HeartBeatCommand, LogoffCommand} = require("./Reflector");
 
 
 app.use(bodyParser.json());
@@ -40,6 +40,7 @@ app.post('/auth', function(request, response) {
         const base64Part = virginHeaderBase64.substring(basicPosition + 6);
         const {userName, password} = authentication.retrieveUserNameAndPassword(base64Part);
         const token = authentication.authenticate(userName, password);
+        wsAuthToken = token;
         response.header("security-token", token);
         response.status(200);
         response.send(JSON.stringify({"Command":"Login", "Payload": userName}));
@@ -67,6 +68,7 @@ app.post('/logoff', function(request, response){
     const securityToken = request.headers["security-token"];
     try {
         authentication.logoff(securityToken);
+        wsAuthToken = null;
         response.status(200);
         response.send({"message":"Logged off"});
         console.log("User successfully logged off");
@@ -153,39 +155,46 @@ app.get('/user', function(request, response) {
 
 // The lines below are responsible for web-socket communication with the user's browser
 const browserRouter = express.Router();
+const roverRouter = express.Router();
+const loginBrowserReflector = new LoginCommand(browserRouter, roverRouter);
+const coordsBrowserReflector = new CoordsCommand(browserRouter, roverRouter);
+const heartBeatBrowserReflector = new HeartBeatCommand(browserRouter, roverRouter);
+const logoffBrowserReflector = new LogoffCommand(browserRouter, roverRouter);
 
-browserRouter.ws('/login', function (ws, req) {
-    ws.on('message', function(jsonAsString) { // {'Command':'login', 'Payload': 'username', 'token': token}
-        const commandAndPayload = JSON.parse(jsonAsString);
-        if(commandAndPayload.Command == "login") {
-            if(commandAndPayload.Payload == wsUserName  || wsUserName == null) {
-                if(authentication.token2UserNameMap[commandAndPayload.token] == commandAndPayload.Payload) {
-                    wsAuthToken = commandAndPayload.token;
-                    wsUserName =  commandAndPayload.Payload;
-                    wsDate = Date.now();
-                    ws.send(`{"Command": "login", 
-                              "Payload": "Success",
-                              "token": "${commandAndPayload.token}"}`);
-                } else {
-                    ws.send(`{"Command": "login", 
-                              "Payload": "Failure: the token ${commandAndPayload.token} does not belong to the user ${wsUserName}",
-                              "token: ${commandAndPayload.token}"}`);
-                }
-            } else {
-                ws.send(`{"Command": "login", 
-                          "Payload": "Failure: the user ${wsUserName} is already being connected to the rover",
-                          "token: ${commandAndPayload.token}"}`);
-            }
+// The lines below are responsible for web-socket communication with device (rover)
+/* The set of command below allow sending the commands down below Web-Socket pipe and
+receive the asych responses as a respective method call
+ */
+const loginRoverCommand = new LoginCommand(roverRouter);
+const coordsRoverCommand = new CoordsCommand(roverRouter);
+const heartBeatRoverCommand = new HeartBeatCommand(roverRouter);
+const logoffRoverCommand = new LogoffCommand(roverRouter);
+
+loginRoverCommand.setRouterThat();
+
+browserRouter.ws('/login', loginBrowserReflector.shim);
+ws.onLogin = function (payload) {
+    if(wsAuthToken != null && wsAuthToken == payload.token) {
+        loginBrowserReflector.sendThat(payload); // Login information going to the rover
+        return "Success";
+    } else {
+        const userNameFound = authentication.token2UserNameMap(payload.token);
+        if(userNameFound != null && userNameFound == wsUserName) {
+            wsAuthToken = payload.token;
+            loginBrowserReflector.sendThat(payload);
         } else {
-            ws.send(`{"Command": "login", 
-                      "Payload": "Failure: the expected command is 'login'",
-                      "token: ${commandAndPayload.token}"}`);
+            return `The login token mismatch. Looks like the rover is already used by someone else ${wsUserName}`
         }
-    });
-});
+    }
+};
 
-browserRouter.ws('/coords', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
+browserRouter.ws('/coords', coordsBrowserReflector.shim); // These coordinates are coming from Browser, and they have to be sent into the Rover
+browserRouter.onCoordinates = function (payload) {
+
+}
+
+/*
+    ws.on('message', function(payload) {
         const commandAndPayload = JSON.parse(jsonAsString);
         if(commandAndPayload.Command == "targetCoordinates") {
             if(commandAndPayload.token == wsAuthToken) {
@@ -203,7 +212,7 @@ browserRouter.ws('/coords', function(ws, req) {
                       "token: ${commandAndPayload.token}"}`);
         }
     });
-});
+}); */
 
 browserRouter.ws('/heartbeat', function(ws, req) {
     ws.on('message', function(jsonAsString) {
@@ -228,15 +237,6 @@ browserRouter.ws('/logoff', function(ws, req) {
 });
 app.use("/browser", browserRouter);
 
-// The lines below are responsible for web-socket communication with device (rover)
-const roverRouter = express.Router();
-/* The set of command below allow sending the commands down below Web-Socket pipe and
-receive the asych responses as a respective method call
- */
-const loginRoverCommand = new LoginRoverCommand(roverRouter);
-const coordsRoverCommand = new CoordsRoverCommand(roverRouter);
-const heartBeatRoverCommand = new HeartBeatRoverCommand(roverRouter);
-const logoffRoverCommand = new LogoffRoverCommand(roverRouter);
 
 roverRouter.ws('/login', loginRoverCommand.shim);
 roverRouter.onLogin = function(commandAndPayload) {
@@ -250,27 +250,32 @@ roverRouter.onLogin = function(commandAndPayload) {
                                      "Payload": wsUserName == null ? "Unknown" : wsUserName,
                                      "token": "${token}"}`);
             this.wsRoverAuthToken = token;
-
         } catch (e) {
             loginRoverCommand.send(`{"Command": "login", 
                                      "Payload": Failure: ${e.message}`);
+            console.log(`Login failed because of ${e.message}`);
             this.wsRoverAuthToken = null;
         }
     } else {
         loginRoverCommand.send(`{"Command": "login", 
                                  "Payload": "Failure: the expected command is 'login'"`);
+        console.log(`Login failed because of the expected command is 'login' but it was ${commandAndPayload.Command}`);
         this.wsRoverAuthToken = null;
     }
 };
 
 roverRouter.ws('/coords', coordsRoverCommand.shim);
 roverRouter.onCoordsReceived = (xy)=> {
-    // Somehow reflect this changes in real coordinates on the screen
+    // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
+
 
 };
 
 roverRouter.ws('/heartbeat', heartBeatRoverCommand.shim);
-roverRouter.onHeartBeat = () => {
+roverRouter.onHeartBeat = (heartBeatInfo) => {
+    if(heartBeatInfo.Command == "heartBeat") {
+
+    }
 
 }
 
