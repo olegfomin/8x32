@@ -173,178 +173,137 @@ const logoffRoverCommand = new LogoffCommand(roverRouter);
 loginRoverCommand.setRouterThat();
 
 browserRouter.ws('/login', loginBrowserReflector.shim);
-ws.onLogin = function (payload) {
-    if(wsAuthToken != null && wsAuthToken == payload.token) {
-        loginBrowserReflector.sendThat(payload); // Login information going to the rover
+ws.onLogin = function (command) {
+    if(wsAuthToken != null && wsAuthToken == command.payload.token) {
+        loginBrowserReflector.sendThat(command.payload); // Login information going to the rover
         return "Success";
     } else {
-        const userNameFound = authentication.token2UserNameMap(payload.token);
+        const userNameFound = authentication.token2UserNameMap(command.payload.token);
         if(userNameFound != null && userNameFound == wsUserName) {
-            wsAuthToken = payload.token;
-            loginBrowserReflector.sendThat(payload);
+            wsAuthToken = command.payload.token;
+            loginBrowserReflector.sendThat(command.payload);
+            return "Success";
         } else {
-            return `The login token mismatch. Looks like the rover is already used by someone else ${wsUserName}`
+            return `Failure: The login token mismatch. Looks like the rover is already used by someone else ${wsUserName}`
         }
     }
 };
 
 browserRouter.ws('/coords', coordsBrowserReflector.shim); // These coordinates are coming from Browser, and they have to be sent into the Rover
-browserRouter.onCoordinates = function (payload) {
+browserRouter.onCoordinates = function (command) {
+    if(wsAuthToken != null && wsAuthToken == command.payload.token) {
+        if(wsUserName != null) {
+            coordsBrowserReflector.sendThat(command.payload); // Login information going to the rover
+            return "Success";
+        } else {
+            return "Failure: No user logged in";
+        }
 
+    } else {
+        return "Failure: wrong token";
+    }
+} // ----
+
+browserRouter.ws('/heartbeat', heartBeatBrowserReflector.shim);
+browserRouter.onHeartBeat = function(command) {
+    // Here token stop being a security one but becomes a timing mechanism
+    if (wsRoverConnected) {
+        command.source = "rover";
+        heartBeatBrowserReflector.sendThat(command);
+        return "Success";
+    } else {
+        command.source = "web-server";
+        heartBeatBrowserReflector.sendThis(command);
+        return "Success";
+    }
 }
 
-/*
-    ws.on('message', function(payload) {
-        const commandAndPayload = JSON.parse(jsonAsString);
-        if(commandAndPayload.Command == "targetCoordinates") {
-            if(commandAndPayload.token == wsAuthToken) {
-                if(wsRoverConnected) {
-                    roverRouter.ws.send(jsonAsString);
-                }
+browserRouter.ws('/logoff', loginBrowserReflector.shim);
+    browserRouter.onLogoff = function(command) {
+        if(wsAuthToken != null && wsAuthToken == payload.token) {
+            if(wsUserName != null) {
+                logoffBrowserReflector.sendThat(command); // Logoff information going to the rover
+                wsAuthToken = null;
+                wsUserName = null;
+                wsDate     = null;
+                wsRoverRoute = [];
+                wsRoverConnected = false;
+                return "Success";
             } else {
-                ws.send(`{"Command": "targetCoordinates", 
-                          "Payload": "Failure: The incorrect security token has been provided",
-                          "token: ${commandAndPayload.token}"}`);
+                return "Failure: No user logged in";
             }
         } else {
-            ws.send(`{"Command": "targetCoordinates", 
-                      "Payload": "Failure: the expected command is 'targetCoordinates' but it was '${commandAndPayload.Command}'",
-                      "token: ${commandAndPayload.token}"}`);
+            return "Failure: wrong token";
         }
-    });
-}); */
-
-browserRouter.ws('/heartbeat', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
-        if(commandAndPayload.Command == "heartBeat") {
-            ws.send(`{"Command": "heartBeat", 
-                      "Payload": "Success",
-                      "token": "${commandAndPayload.token}"}`);
-        } else {
-            ws.send(`{"Command": "heartBeat", 
-                      "Payload": "Failure: Invalid command name",
-                      "token": "${commandAndPayload.token}"}`);
-        }
-    });
-});
-
-browserRouter.ws('/logoff', function(ws, req) {
-    ws.on('message', function(jsonAsString) {
-        const commandAndPayload = JSON.parse(jsonAsString);
-
-    });
-});
-app.use("/browser", browserRouter);
+    }
+    app.use("/browser", browserRouter);
 
 
-roverRouter.ws('/login', loginRoverCommand.shim);
-roverRouter.onLogin = function(commandAndPayload) {
-    if(commandAndPayload.Command == "login") {
+    roverRouter.ws('/login', loginRoverCommand.shim);
+    roverRouter.onLogin = function(payload) {
         try {
-            const authString = commandAndPayload.Payload;
+            const authString = payload;
             const {userName, password} = authentication.retrieveUserNameAndPassword(authString)
             const token = authentication.authenticate(userName, password);
             // if web-browser user-name is not yet logged in then we want to display "Unknown" to the rover's screen
-            loginRoverCommand.send(`{"Command": "login", 
+            loginRoverCommand.sendThis(`{"Command": "login", 
                                      "Payload": wsUserName == null ? "Unknown" : wsUserName,
                                      "token": "${token}"}`);
             this.wsRoverAuthToken = token;
         } catch (e) {
-            loginRoverCommand.send(`{"Command": "login", 
-                                     "Payload": Failure: ${e.message}`);
+            loginRoverCommand.sendThis(`{"Command": "login", 
+                                    "Payload": Failure: ${e.message}`);
             console.log(`Login failed because of ${e.message}`);
             this.wsRoverAuthToken = null;
         }
-    } else {
-        loginRoverCommand.send(`{"Command": "login", 
-                                 "Payload": "Failure: the expected command is 'login'"`);
-        console.log(`Login failed because of the expected command is 'login' but it was ${commandAndPayload.Command}`);
-        this.wsRoverAuthToken = null;
-    }
-};
 
-roverRouter.ws('/coords', coordsRoverCommand.shim);
-roverRouter.onCoordsReceived = (xy)=> {
-    // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
+    };
 
+    roverRouter.ws('/coords', coordsRoverCommand.shim);
+    roverRouter.onCoordsReceived = function(command) {
+        // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
+        if(wsRoverConnected) {}
 
-};
+    };
 
-roverRouter.ws('/heartbeat', heartBeatRoverCommand.shim);
-roverRouter.onHeartBeat = (heartBeatInfo) => {
-    if(heartBeatInfo.Command == "heartBeat") {
-
+    roverRouter.ws('/heartbeat', heartBeatRoverCommand.shim);
+    roverRouter.onHeartBeat = function(command) {
     }
 
-}
+    roverRouter.ws('/logoff', logoffRoverCommand.shim);
+    roverRouter.onLogoff = function() {
+    }
 
-roverRouter.ws('/logoff', logoffRoverCommand.shim);
-roverRouter.onLogoff = function() {
-  console.log("I am a function");
-}
-
-app.use("/rover", roverRouter);
+    app.use("/rover", roverRouter);
 
 
 // start express server on port 5000
-app.listen(5000, () => {
-    console.log("server started on port 5000");
-});
+    app.listen(5000, () => {
+        console.log("server started on port 5000");
+    });
 
-app.loginFn = function(ws, token) {
-    if(wsAuthToken == null) {
-        wsUserName = authentication.token2UserNameMap[token];
-        if(wsUserName == "rover") {
-
-            wsDate = Date.now();
-            wsAuthToken = token;
-            console.log("Sent success login to device");
-            ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
-        } else {
-            ws.send(JSON.stringify({"Command":"login", "Payload": "Invalid security token provided"}));
-        }
-    } else {
+    app.targetCoordinates = function(ws, payload, token) {
         if(token == wsAuthToken) {
-            ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
-            wsDate = Date.now();
-            // TODO Device must send these
-            setInterval(() => {
-               ws.send(JSON.stringify({"Command":"heartBeat", "Payload" : "Device is ok"}));
-            }, 3000);
-        } else {
-            const userNameRetrieved = authentication.token2UserNameMap[token];
-            if(userNameRetrieved === wsUserName) {
-                wsAuthToken = token;
-                ws.send(JSON.stringify({"Command":"login", "Payload":"Success"}));
-                wsDate = Date.now();
-            } else {
-                ws.send(JSON.stringify({"Command":"login", "Payload": `The device is already used by '${wsUserName}'`}));
+            for(let arrayIndex = 0; arrayIndex < payload.length; arrayIndex++) {
+                app.targetCoordArrayOfArrays.push(payload[arrayIndex]);
             }
+            ws.send(JSON.stringify({"Command":"targetCoordinates", "Payload":"Success"}));
+            console.log("The server received the coordinates as follow: "+payload);
+        } else {
+            ws.send(JSON.stringify({"Command":"targetCoordinates", "Payload":"Wrong token"}));
         }
     }
-}
 
-app.targetCoordinates = function(ws, payload, token) {
-    if(token == wsAuthToken) {
-        for(let arrayIndex = 0; arrayIndex < payload.length; arrayIndex++) {
-            app.targetCoordArrayOfArrays.push(payload[arrayIndex]);
-        }
-        ws.send(JSON.stringify({"Command":"targetCoordinates", "Payload":"Success"}));
-        console.log("The server received the coordinates as follow: "+payload);
-    } else {
-        ws.send(JSON.stringify({"Command":"targetCoordinates", "Payload":"Wrong token"}));
+
+
+    app.logoff = function(token) {
+
     }
-}
+
+    app.errorFn = function(err) {
+        console.log("An error occurred unknown command: "+err);
+    }
+
+    module.exports=roverRouter;
 
 
-
-app.logoff = function(token) {
-
-}
-
-app.errorFn = function(err) {
-    console.log("An error occurred unknown command: "+err);
-}
-
-module.exports=roverRouter;

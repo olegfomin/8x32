@@ -90,8 +90,7 @@ class LoginCommand extends Reflector {
         if(commandAndPayload.Command == this.LOGIN) {
             if(commandAndPayload.Payload != null &&
                 commandAndPayload.Payload.length != 0) {
-                commandAndPayload.Payload.token = commandAndPayload.token; // Shoving the token into the Payload
-                const result = this.routerThis.onLogin(commandAndPayload.Payload);
+                const result = this.routerThis.onLogin(commandAndPayload);
                 if(result != "Success") {
                     console.log(result);
                     this.wsThis.send(`{"Command": "login", 
@@ -118,8 +117,15 @@ class CoordsCommand extends Reflector {
     onReceived(message) {
         const xy = JSON.parse(message);
         if(xy.Command == this.COORDS) {
+            xy.Payload.token = xy.token; // Shoving the token into the Payload
             if(xy.Payload != null && xy.Payload.length != 0) {
-                this.routerThis.onCoordinates(xy);
+                const result = this.routerThis.onCoordinates(xy);
+                if(result != "Success") {
+                    console.log(result);
+                    this.wsThis.send(`{"Command": "login", 
+                                       "Payload": "${result}",
+                                       "token: ${xy.token}"}`);
+                }
             } else {
                 console.log(`Failure: Payload in CoordsCommand must not be empty`);
                 this.wsThis.send(`{"Command": "targetCoords", 

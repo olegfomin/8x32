@@ -245,7 +245,7 @@ export default class Court extends React.Component {
       this.statusBar.innerHTML = "Point the area where the rover must go";
       window.scrollTo(0, 500); // Rolling the scroller to the end
       this.redrawPicture(this.state.Home_X, this.state.Home_Y);
-      // Starting the heartbeat here, it will stop at device logoff
+      // Starting the heartbeat here, it will stop at device logoff. Attention here the token changes its purpose from security one into the unique one
       const intervalId = setInterval(() => {
           const token = uuid.v4();
           this.heartBeatToken2Date[token] = Date.now();
