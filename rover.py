@@ -14,11 +14,11 @@ def on_close(ws, close_status_code, close_msg):
 
 def on_open(ws):
     print("Opened connection")
-    ws.send("{\"command\":\"targetCoordinates\", \"Payload\":[{\"x\":320,\"y\":380}], \"token\":\"123455667\"}");
+    ws.send("{\"Command\":\"login\", \"Payload\":\"cm92ZXI6Ujk1NDRyODIzMg==\"}")
 
 if __name__ == "__main__":
     websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://www.roboticrover.com:5000/ws",
+    ws = websocket.WebSocketApp("ws://www.roboticrover.com:5000/rover/login",
                               on_open=on_open,
                               on_message=on_message,
                               on_error=on_error,

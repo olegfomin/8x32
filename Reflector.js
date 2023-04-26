@@ -22,18 +22,17 @@ class Reflector {
         this.wsThat   = null;
         this.sendThis = this.sendThis.bind(this);
         this.onConnected = this.onConnected.bind(this);
-        this.shim = this.shim.bind(this);
+        this.shimThis = this.shimThis.bind(this);
+        this.shimThat = this.shimThat.bind(this);
     }
 
     setRouterThat(routerThat) { // The addendum setter for constructor with one argument
         this.routerThat = routerThat;
     }
 
-    constructor(routerThis, routerThat) { // two argument constructor here there is no need for the setter
-        this.constructor(routerThis);
-        this.routerThat = routerThat;
-    };
-
+    setRouterThis(routerThis) {
+       this.routerThis = routerThis;
+    }
 
     sendThis(message) {
         if(this.wsThis != null) {
@@ -95,20 +94,24 @@ class LoginCommand extends Reflector {
                     console.log(result);
                     this.wsThis.send(`{"Command": "login", 
                                        "Payload": "${result}",
-                                       "token: ${commandAndPayload.token}"}`);
+                                       "token": "${commandAndPayload.token}"}`);
 
+                } else {
+                    this.wsThis.send(`{"Command": "login", 
+                                       "Payload": "Success",
+                                       "token": "${commandAndPayload.token}"}`);
                 }
             } else {
                 console.log(`Failure: Payload in LoginCommand must not be empty`);
                 this.wsThis.send(`{"Command": "login", 
                                    "Payload": "Failure: the payload is empty",
-                                   "token: ${commandAndPayload.token}"}`);
+                                   "token": "${commandAndPayload.token}"}`);
             }
         } else {
             console.log(`Failure: Expected command is 'login' but it was ${commandAndPayload.Command}`);
             this.wsThis.send(`{"Command": "login", 
                                "Payload": "Failure: the expected command is 'login'",
-                               "token: ${commandAndPayload.token}"}`);
+                               "token": "${commandAndPayload.token}"}`);
         }
     };
 };

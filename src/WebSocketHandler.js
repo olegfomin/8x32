@@ -32,6 +32,7 @@ export default class WebSocketHandler {
     }
 
     loginResponseParser(event) {
+        console.log("===== event =========>"+event);
         const message = JSON.parse(event.data);
         if(message.Command == "login") {
             if(message.Payload == "Success") {
@@ -65,7 +66,7 @@ export default class WebSocketHandler {
     }
 
     sendTargetCoordinates(xyArray) {
-        this.coordsSocket.send(JSON.stringify({"Command": "targetCoordinates", "Payload":xyArray, "token": this.token}));
+        this.coordsSocket.send(JSON.stringify({"Command": "coords", "Payload":xyArray, "token": this.token}));
     }
 
     logout(userName, token) {

@@ -88,9 +88,10 @@ export default class RouteMaker {
         const stepY = Math.round((toY - fromY) / 20.0);
         let currentX = fromX+stepX;
         let currentY = fromY+stepY;
+        let counter  = 0;
         const intervalId = setInterval(() => {
             fromXy = {"x":currentX, "y": currentY};
-            localRoute.push(xy);
+            localRoute.push(fromXy);
             this.court.redrawPicture(currentX, currentY);
             currentX += stepX;
             currentY += stepY;
