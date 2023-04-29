@@ -30,10 +30,6 @@ class Reflector {
         this.routerThat = routerThat;
     }
 
-    setRouterThis(routerThis) {
-       this.routerThis = routerThis;
-    }
-
     sendThis(message) {
         if(this.wsThis != null) {
             this.wsThis.send(message);
@@ -96,10 +92,6 @@ class LoginCommand extends Reflector {
                                        "Payload": "${result}",
                                        "token": "${commandAndPayload.token}"}`);
 
-                } else {
-                    this.wsThis.send(`{"Command": "login", 
-                                       "Payload": "Success",
-                                       "token": "${commandAndPayload.token}"}`);
                 }
             } else {
                 console.log(`Failure: Payload in LoginCommand must not be empty`);

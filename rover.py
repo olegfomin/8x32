@@ -1,9 +1,9 @@
 import websocket
-import _thread
 import time
 import rel
 
 def on_message(ws, message):
+    print("============= on message =================")
     print(message)
 
 def on_error(ws, error):

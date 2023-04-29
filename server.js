@@ -21,10 +21,17 @@ let wsAuthToken = null; // If null it means no one is controlling device
 let wsUserName = null; // Holding a user name as well. If user left the session without logging off
 let wsDate     = null; // Date and time when the socket was obtained
 let wsRoverRoute = [];
-let wsRoverConnected = false;
 let wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
 let wsRoverUserName = null; // Rover user-name is rover
 let wsRoverLoginDate = null;
+
+function isBrowserConnected() {
+    return wsAuthToken != null;
+}
+
+function isRoverConnected() {
+    return wsRoverAuthToken != null;
+}
 
 
 app.use(express.static('build'));
@@ -175,19 +182,25 @@ coordsRoverReflector.setRouterThat(browserRouter);
 heartBeatRoverReflector.setRouterThat(browserRouter);
 logoffRoverReflector.setRouterThat(browserRouter);
 
+loginBrowserReflector.setRouterThat(roverRouter);
+coordsBrowserReflector.setRouterThat(roverRouter);
+heartBeatBrowserReflector.setRouterThat(roverRouter);
+logoffBrowserReflector.setRouterThat(roverRouter);
+
+
 browserRouter.ws('/login', loginBrowserReflector.shimThis);
 browserRouter.onLogin = function (command) {
-    if(wsAuthToken != null && wsAuthToken == command.token) {
-        wsDate = Date.now();
+    if(wsAuthToken != null && wsAuthToken == command.token &&
+       wsUserName  != null && wsUserName == command.payload) {
         loginBrowserReflector.sendThis(command.payload); // Login information going to the rover
-        console.log("==== Browser logged into the server ====");
+        wsDate = Date.now();
         return "Success";
     } else {
         const userNameFound = authentication.token2UserNameMap(command.token);
-        if(userNameFound != null && userNameFound == wsUserName) {
+        if(userNameFound != null && userNameFound == command.payload) {
             wsAuthToken = command.token;
+            wsUserName = command.payload;
             wsDate = Date.now();
-            loginBrowserReflector.sendThis(command.payload);
             return "Success";
         } else {
             return `Failure: The login token mismatch. Looks like the rover is already used by someone else ${wsUserName}`
@@ -195,13 +208,13 @@ browserRouter.onLogin = function (command) {
     }
 };
 
-browserRouter.ws('/coords', coordsBrowserReflector.shimThat); // These coordinates are coming from Browser, and they have to be sent into the Rover
+browserRouter.ws('/coords', coordsBrowserReflector.shimThis); // These coordinates are coming from Browser, and they have to be sent into the Rover
 browserRouter.onCoordinates = function (command) {
     console.log("====== Received Coordinates ====> "+JSON.stringify(command.Payload));
     if(wsAuthToken != null && wsAuthToken == command.token) {
         if(wsUserName != null) {
             console.log("====== Received Coordinates ====>");
-            coordsBrowserReflector.sendThat(command.payload); // Login information going to the rover
+            coordsRoverReflector.sendThis(command.payload); // Login information going to the rover
             console.log("====== Forwarding Coordinates ====>");
             return "Success";
         } else {
@@ -212,12 +225,12 @@ browserRouter.onCoordinates = function (command) {
     }
 }
 
-browserRouter.ws('/heartbeat', heartBeatBrowserReflector.shim);
+browserRouter.ws('/heartbeat', heartBeatBrowserReflector.shimThis);
 browserRouter.onHeartBeat = function(command) {
     // Here token stop being a security one but becomes a timing mechanism
-    if (wsRoverConnected) {
+    if (isRoverConnected()) {
         command.source = "rover";
-        heartBeatBrowserReflector.sendThat(command);
+        heartBeatRoverReflector.sendThis(command);
         return "Success";
     } else {
         command.source = "web-server";
@@ -226,16 +239,17 @@ browserRouter.onHeartBeat = function(command) {
     }
 }
 
-browserRouter.ws('/logoff', loginBrowserReflector.shim);
+browserRouter.ws('/logoff', loginBrowserReflector.shimThis);
 browserRouter.onLogoff = function(command) {
     if(wsAuthToken != null && wsAuthToken == payload.token) {
         if(wsUserName != null) {
-            logoffBrowserReflector.sendThat(command); // Logoff information going to the rover
+            logoffBrowserReflector.sendThis(command); // Logoff information going to the rover
             wsAuthToken = null;
             wsUserName = null;
             wsDate     = null;
             wsRoverRoute = [];
-            wsRoverConnected = false;
+            wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
+            wsRoverUserName = null; // Rover user-name is rover
             return "Success";
         } else {
             return "Failure: No user logged in";
@@ -252,11 +266,11 @@ roverRouter.onLogin = function(message) {
         const authString = message.Payload;
         const {userName, password} = authentication.retrieveUserNameAndPassword(authString)
         const token = authentication.authenticate(userName, password);
-        // if web-browser user-name is not yet logged in then we want to display "Unknown" to the rover's screen
-        wsRoverUserName = userName;
+        // if web-browser user-name is not yet logged in then we want to display "Unknown" to the rover's otherwise returning name of the web-browser user
         loginRoverReflector.sendThis(`{"Command": "print", 
-                                       "Payload": "Unknown user",
+                                       "Payload": ${wsUserName==null ? "Unknown user" : wsUserName},
                                        "token": "${token}"}`);
+        wsRoverUserName = userName;
         this.wsRoverConnected = true;
         this.wsRoverAuthToken = token;
         this.wsRoverLoginDate = Date.now();
@@ -272,13 +286,13 @@ roverRouter.onLogin = function(message) {
 
 };
 
-roverRouter.ws('/coords', coordsRoverReflector.shimThat); // From Rover's sensors data
+roverRouter.ws('/coords', coordsRoverReflector.shimThis); // From Rover's sensors data
 roverRouter.onCoordsReceived = function(command) {
     // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
-    if(wsRoverConnected) {
+    if(isRoverConnected()) {
         if(command.token == wsRoverAuthToken) {
             if(wsRoverUserName != null) {
-                coordsBrowserReflector.sendThat(command.payload); // Login information going to the browser
+                coordsBrowserReflector.sendThat(command.payload); // Redirecting information into the browser
                 return "Success";
             } else {
                 return "Failure: No user logged in";
@@ -291,13 +305,13 @@ roverRouter.onCoordsReceived = function(command) {
     }
 };
 
-roverRouter.ws('/heartbeat', heartBeatRoverReflector.shimThat);
+roverRouter.ws('/heartbeat', heartBeatRoverReflector.shimThis);
 roverRouter.onHeartBeat = function(command) {
     // Here the task is simple return whatever rover send to you back to the browser
     // Here token stop being a security one but becomes a timing mechanism
-    if (wsRoverConnected) {
+    if (isBrowserConnected()) {
         command.source = "rover";
-        heartBeatBrowserReflector.sendThat(command);
+        heartBeatBrowserReflector.sendThis(command);
         return "Success";
     } else {
         return "Failure: The unexpected heart beat from the rover while it's marked as disconnected";
@@ -305,9 +319,9 @@ roverRouter.onHeartBeat = function(command) {
 
 }
 
-roverRouter.ws('/logoff', logoffRoverReflector.shimThat);
+roverRouter.ws('/logoff', logoffRoverReflector.shimThis);
 roverRouter.onLogoff = function(command) {
-    if(wsRoverConnected) {
+    if(isRoverConnected()) {
         if(wsRoverAuthToken == command.token) {
             loginRoverReflector.sendThis(`{"Command": "logoff", 
                                            "Payload": wsRoverUserName,
