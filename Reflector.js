@@ -112,26 +112,25 @@ class CoordsCommand extends Reflector {
     onReceived(message) {
         const xy = JSON.parse(message);
         if(xy.Command == this.COORDS) {
-            xy.Payload.token = xy.token; // Shoving the token into the Payload
-            if(xy.Payload != null && xy.Payload.length != 0) {
-                const result = this.routerThis.onCoordinates(xy);
-                if(result != "Success") {
-                    console.log(result);
-                    this.wsThis.send(`{"Command": "login", 
-                                       "Payload": "${result}",
-                                       "token: ${xy.token}"}`);
+            if(Array.isArray(xy.Payload)) {
+                const result = this.routerThis.onCoordsReceived(xy);
+                if(result.startsWith("Failure:")) {
+                    this.wsThis.send(`{"Command": "coords", 
+                                       "Payload": ${result},
+                                       "token": "${xy.token}"}`);
                 }
             } else {
-                console.log(`Failure: Payload in CoordsCommand must not be empty`);
-                this.wsThis.send(`{"Command": "targetCoords", 
-                                   "Payload": "Failure: in CoordsRoverCommand the payload is empty",
-                                   "token: ${xy.token}"}`);
+                console.log(`Failure: Payload in coords command must be an empty`);
+                this.wsThis.send(`{"Command": "coords", 
+                                   "Payload": "Failure: the payload is NOT an array",
+                                   "token": "${xy.token}"}`);
             }
         } else {
-            console.log(`Failure: Expected command is ${this.COORDS} but it was ${xy.Command}`);
-            this.wsThis.send(`{"Command": "targetCoords", 
-                               "Payload": "Failure: the expected command is 'targetCoords' but it was ${xy.Command}",
-                               "token: ${xy.token}"}`);
+            //Error
+            console.log(`Failure: Payload command must be "coords" but it was '${xy.Command}' `);
+            this.wsThis.send(`{"Command": "coords", 
+                               "Payload": "Failure: Payload command must be "coords" but it was '${xy.Command}'",
+                                "token": "${xy.token}"}`);
         }
 
     };
@@ -140,7 +139,7 @@ class CoordsCommand extends Reflector {
 class HeartBeatCommand extends Reflector {
     onReceived(message) {
         const heartBeatInfo = JSON.parse(message);
-        if(heartBeatInfo.command == this.HEART_BEAT) {
+        if(heartBeatInfo.Command == this.HEART_BEAT) {
             if(heartBeatInfo.Payload != null && heartBeatInfo.Payload.length != 0) {
                 this.routerThis.onHeartBeat(heartBeatInfo);
             } else {
@@ -150,9 +149,9 @@ class HeartBeatCommand extends Reflector {
                                    "token: ${heartBeatInfo.token}"}`);
             }
         } else {
-            console.log(`Failure: Expected command is ${this.HEART_BEAT} but it was ${heartBeatInfo.command}`);
+            console.log(`Failure: Expected command is ${this.HEART_BEAT} but it was ${heartBeatInfo.Command}`);
             this.wsThis.send(`{"Command": ${this.HEART_BEAT}, 
-                               "Payload": "Failure: the expected command is ${this.HEART_BEAT} but it was ${heartBeatInfo.command}", 
+                               "Payload": "Failure: the expected command is ${this.HEART_BEAT} but it was ${heartBeatInfo.Command}", 
                                "token": ${heartBeatInfo.token}}`);
         }
     };

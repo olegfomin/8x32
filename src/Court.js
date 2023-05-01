@@ -232,7 +232,6 @@ export default class Court extends React.Component {
   }
 
   login2DeviceSucceeded() {
-      console.log("+++++++ I am in login2DeviceSucceeded+++++++++++");
       this.showInfoMessage("Device login succeeded");
       this.setState({"wsConnected" : true});
       this.setState({wsConnected : true});

@@ -32,11 +32,10 @@ export default class WebSocketHandler {
     }
 
     loginResponseParser(event) {
-        console.log("===== event =========>"+event);
         const message = JSON.parse(event.data);
         if(message.Command == "login") {
-            if(message.Payload == "Success") {
-                this.heartBeatSocket = new WebSocket(this.court.BASE_URL+"browser/heartbeat");
+            if(!message.Payload.startsWith("Failure:")) {
+                this.heartBeatSocket = new WebSocket(this.court.BASE_URL+"browser/heartbeat", "ws");
                 this.heartBeatSocket.onopen = (e) => {
                     this.heartBeatSocket.onmessage = this.heartBeatResponseParser;
                 }
@@ -58,7 +57,7 @@ export default class WebSocketHandler {
 
     heartBeatResponseParser(event) {
         const message = JSON.parse(event.data);
-        if(message.Command == "heartBeat" && message.Payload == "Success") {
+        if(message.Command == "heartBeat" && !message.Payload.startsWith("Failure:")) {
             this.court.heartBeatSuccessful(message.token);
         } else {
             this.court.heartBeatFailed(message.token);
