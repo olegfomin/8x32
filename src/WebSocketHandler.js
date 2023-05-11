@@ -20,6 +20,7 @@ export default class WebSocketHandler {
     }
 
     login(token, userName) {
+        console.log(this.court.BASE_URL+"browser/login");
         this.loginSocket = new WebSocket(this.court.BASE_URL+"browser/login",'ws');
         this.loginSocket.onopen = (e) => {
             this.court.setState({"wsConnecting": true});
@@ -39,8 +40,8 @@ export default class WebSocketHandler {
                 this.heartBeatSocket.onopen = (e) => {
                     this.heartBeatSocket.onmessage = this.heartBeatResponseParser;
                 }
-                this.coordsSocket = new WebSocket(this.court.BASE_URL+"browser/coords");
-                this.logoffSocket = new WebSocket(this.court.BASE_URL+"browser/logoff");
+                this.coordsSocket = new WebSocket(this.court.BASE_URL+"browser/coords", "ws");
+                this.logoffSocket = new WebSocket(this.court.BASE_URL+"browser/logoff", "ws");
                 this.court.login2DeviceSucceeded();
             } else {
                 this.court.login2DeviceFailed("The login failed due to '"+message.Payload+"'");

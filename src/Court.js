@@ -14,7 +14,7 @@ import WebSocketHandler from "./WebSocketHandler";
 const uuid = require('uuid');
 
 export default class Court extends React.Component {
-    BASE_URL = "ws://www.roboticrover.com:5000/"
+    BASE_URL = `ws://${window.location.hostname}:5000/`;
     HEART_BEAT_MAX_FAILURES = 10;
     X_DMZ_TOP_LEFT_COORD   = 70;
     Y_DMZ_TOP_LEFT_COORD   = 524;
