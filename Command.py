@@ -14,16 +14,59 @@ import math
   
 CLOCK_WISE = 1
 COUNTER_CLOCK_WISE = -1
-TURN_COEFFICIENT_PIVOT = 0.005 # This value needs to be resolved empirically or it may be even a function
-TURN_COEFFICIENT_SIMPLE = 0.004
-ANGLE2TIME=0.0028
+ANGLE2TIME=0.0085
 CALLIBRATION_LEFT  = 1.0
-CALLIBRATION_RIGHT = 1.0
-DISTANCE2TIME=0.0018
+CALLIBRATION_RIGHT = 0.95
+DISTANCE2TIME_FORWARD=0.005
+DISTANCE2TIME_BACKWARD=0.0043
+
+def andle2TimePivot(angle) :
+	coefficient=0; 
+	if(angle >= 0 and angle < 5):
+		coefficient = 0.15
+	elif(angle >= 5 and angle < 10):
+		coefficient = 0.10
+	elif(angle >= 10 and angle < 20):
+		coefficient = 0.047
+	elif(angle >= 30 and angle < 40):
+		coefficient = 0.03
+	elif(angle >= 40 and angle < 50):
+		coefficient = 0.02
+	elif(angle >= 50 and angle < 60):
+		coefficient = 0.019
+	elif(angle >= 60 and angle < 70):
+		coefficient = 0.016
+	elif(angle >= 70 and angle < 80):
+		coefficient = 0.014
+	elif(angle >= 80 and angle < 90):
+		coefficient = 0.0134
+	elif(angle >= 90 and angle < 100):
+		coefficient = 0.0132	 
+	elif(angle >= 100 and angle < 110):
+		coefficient = 0.0126	 
+	elif(angle >= 110 and angle < 120):
+		coefficient = 0.01	 
+	elif(angle >= 120 and angle < 130):
+		coefficient = 0.0095	 
+	elif(angle >= 130 and angle < 140):
+		coefficient = 0.0090	 
+	elif(angle >= 140 and angle < 150):
+		coefficient = 0.0088	 
+	elif(angle >= 150 and angle < 160):
+		coefficient = 0.0087	 
+	elif(angle >= 160 and angle < 170):
+		coefficient = 0.0086	 
+	elif(angle >= 170 and angle < 180):
+		coefficient = 0.0085
+	else:
+		 coefficient = 0.0085
+	print(coefficient)
+	return coefficient
+		
 
 def m1Start(direction, power) :
 	callibratedPower = CALLIBRATION_LEFT*power 
-	MOTOR.dcCONFIG(0,1,direction,callibratedPower,0.1)           #configure dc motor 1 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,1,direction,callibratedPower,2.5)           #configure dc motor 1 on the MOTORplate at address 0 being configured for clockwise 
 	MOTOR.dcSTART(0,1)                                #Start DC motor
 
 def m1Stop():
@@ -31,7 +74,7 @@ def m1Stop():
 	
 def m2Start(direction, power) : 
 	callibratedPower = CALLIBRATION_LEFT*power 
-	MOTOR.dcCONFIG(0,2,direction,callibratedPower,0.1)           #configure dc motor 2 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,2,direction,callibratedPower,2.5)           #configure dc motor 2 on the MOTORplate at address 0 being configured for clockwise 
 	MOTOR.dcSTART(0,2)                                #Start DC motor
 
 def m2Stop():
@@ -40,7 +83,7 @@ def m2Stop():
 
 def m3Start(direction, power) : 
 	callibratedPower = CALLIBRATION_RIGHT*power
-	MOTOR.dcCONFIG(0,3,direction,power,0.1)           #configure dc motor 3 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,3,direction,callibratedPower,2.5)           #configure dc motor 3 on the MOTORplate at address 0 being configured for clockwise 
 	MOTOR.dcSTART(0,3)                                #Start DC motor
 
 def m3Stop():
@@ -48,7 +91,7 @@ def m3Stop():
 
 def m4Start(direction, power) : 
 	callibratedPower = CALLIBRATION_RIGHT*power
-	MOTOR.dcCONFIG(0,4,direction,power,0.1)           #configure dc motor 4 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,4,direction,callibratedPower,2.5)           #configure dc motor 4 on the MOTORplate at address 0 being configured for clockwise 
 	MOTOR.dcSTART(0,4)                                #Start DC motor
 
 def m4Stop():
@@ -59,7 +102,7 @@ def turnRightPivot(angle):
   m2Start('ccw', 100)
   m3Start('cw', 100)
   m4Start('cw', 100)
-  time.sleep(angle*ANGLE2TIME)
+  time.sleep(angle*andle2TimePivot(angle))
   m1Stop()
   m2Stop()
   m3Stop()
@@ -70,7 +113,7 @@ def turnLeftPivot(angle):
   m2Start('cw', 100)
   m3Start('ccw', 100)
   m4Start('ccw', 100)
-  time.sleep(angle*ANGLE2TIME)
+  time.sleep(angle*andle2TimePivot(angle))
   m1Stop()
   m2Stop()
   m3Stop()
@@ -103,7 +146,7 @@ def goForward(distance):
   m2Start('ccw', 100)
   m3Start('ccw', 100)
   m4Start('ccw', 100)
-  time.sleep(distance*DISTANCE2TIME)
+  time.sleep(distance*DISTANCE2TIME_FORWARD)
   m1Stop()
   m2Stop()
   m3Stop()
@@ -114,7 +157,7 @@ def goBackward(distance):
   m2Start('cw', 100)
   m3Start('cw', 100)
   m4Start('cw', 100)
-  time.sleep(distance*DISTANCE2TIME)
+  time.sleep(distance*DISTANCE2TIME_BACKWARD)
   m1Stop()
   m2Stop()
   m3Stop()
@@ -156,37 +199,48 @@ class Record:
 		return 	self.commandsQueue.empty()
 		
 class RecordPlayer:
-	DELAY_BETWEEN_COMMANDS = 1.0
+	DEFAULT_DELAY_BETWEEN_COMMANDS = 0.1
+	PROLONG_DELAY_BETWEEN_COMMANDS = 3.0;
+	
 	def __init__(self, aRecord):
 		self.record=aRecord
 		
 	def play(self):
+		previousCommand = Command('none')
+		command = Command('none')
 		while(not self.record.isEmpty()):
+			if(command.name != 'none'):
+				 previousCommand = command 
 			command = self.record.getCommand()
-			print(command)
+			print(previousCommand)
+			if((command.name == 'goForward' and previousCommand.name == 'goBackward') or 
+			  (command.name == 'goBackward' and previousCommand.name == 'goForward')): 
+				  print('prolong delay betweeen commands');
+				  time.sleep(self.PROLONG_DELAY_BETWEEN_COMMANDS)
+				  
 			if(command.name == 'goBackward'):
 				goBackward(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS) # This sleep is very important as it allows to switch motor controller context I guess
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS) # This sleep is very important as it allows to switch motor controller context I guess
 			elif(command.name == 'goForward'):
 				goForward(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'turnLeftPivot'):
 				turnLeftPivot(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'turnRightPivot'):
 				turnRightPivot(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'turnRightSimple'):
 				turnRightSimple(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'turnLeftSimple'):
 				turnLeftSimple(command.value)
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'fire'):
 				#empty command for now
 				time.sleep(self.DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'none'): # in case the turn is not neccessary it is still good to keep a command in the Record
-				time.sleep(self.DELAY_BETWEEN_COMMANDS)	
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)	
 			else:
 				raise('Unknown command: '+ command.value)
 				
@@ -258,10 +312,10 @@ class TapeRecorder:
 		# fire command should be here maybe but not too sure
 		
 		
-'''		
+		
 	
-jsonAsString = '{"Command":"coords","Payload":[{"x":330,"y":946},{"x":397.40714285714284,"y":644.7902719550473}],"token":"dd7bac0f-b441-47a7-8aa0-91e656527849"}'
-jsonAsStr1= '{"Command":"coords","Payload":[{"x":330,"y":946},{"x":380.55,"y":670.0761649728922}],"token":"74331cb9-6a7f-4187-aeb1-55cfa6c3b158"}'
+'''jsonAsString = '{"Command":"coords","Payload":[{"x":330,"y":946},{"x":397.40714285714284,"y":644.7902719550473}],"token":"dd7bac0f-b441-47a7-8aa0-91e656527849"}'
+jsonAsStr1= '{"Command":"coords","Payload":[{"x":330,"y":946},{"x":330,"y":300}],"token":"74331cb9-6a7f-4187-aeb1-55cfa6c3b158"}'
 jsonAsObj = json.loads(jsonAsStr1)
 
 record = Record();
@@ -270,9 +324,9 @@ tapeRecorder.addRecord(jsonAsObj)
 recordPlayer = RecordPlayer(record)
 recordPlayer.play();
 
-'''
 
-'''				
+
+				
 record = Record()				
 record.addCommand(Command('goBackward', 10000))
 record.addCommand(Command('turnLeftPivot', 60))
