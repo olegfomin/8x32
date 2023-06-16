@@ -23,6 +23,10 @@ let wsBrowserLoginDate = null;
 let wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
 let wsRoverUserName = null; // Rover user-name is rover
 let wsRoverLoginDate = null;
+let wsBrowserTimeoutHandler = null;
+let wsRoverTimeoutHandler = null;
+let userIntervalHandler = null;
+let roverIntervalHandler = null;
 
 function isBrowserConnected() {
     return wsBrowserToken != null;
@@ -56,15 +60,20 @@ app.post('/auth', function(request, response) {
 });
 
 app.put("/heart-beat", function(request, response) {
-    const securityToken = request.headers["security-token"];
-    if(securityToken==undefined || securityToken==null) {
-        response.status(401);
-        response.send({"message":"No security token found in a message"});
-        return;
+    try {
+        const securityToken = request.headers["security-token"];
+        if (securityToken == undefined || securityToken == null) {
+            response.status(401);
+            response.send({"message": "No security token found in a message"});
+            return;
+        }
+        authentication.validateAndRefresh(securityToken);
+        response.status(200);
+        response.send({"command": "heartBeat", "Payload": request.body.Payload, "token": securityToken});
+    } catch (e) {
+        console.error("The Exception occurred on heart-beat");
+        console.error(e);
     }
-    authentication.validateAndRefresh(securityToken);
-    response.status(200);
-    response.send({"command":"heartBeat", "Payload": request.body.Payload ,"token":securityToken});
 });
 
 app.post('/logoff', function(request, response){
@@ -78,81 +87,103 @@ app.post('/logoff', function(request, response){
         console.log(e);
         response.status(401);
         response.send({"status":e.messages});
+        console.error("The Exception occurred on /logoff");
+        console.error(e);
     }
 });
 
 // Admin creates a new user that is supposed to end-up inside security.properties
 app.post('/user', function(request, response){
-    const securityToken = request.headers["security-token"];
-    const userName = request.body["user-name"];
-    const password = request.body["password"];
-    authentication.mkUser(securityToken, userName, password, (error, data) => {
-        if(error == null) {
-            response.status(201);
-            response.send({"message":`User ${userName} has been created`});
-        } else {
-            response.status(401);
-            response.send({"message":`User ${userName} has NOT been created because of ${error}`});
-        }
-    });
+    try {
+        const securityToken = request.headers["security-token"];
+        const userName = request.body["user-name"];
+        const password = request.body["password"];
+        authentication.mkUser(securityToken, userName, password, (error, data) => {
+            if (error == null) {
+                response.status(201);
+                response.send({"message": `User ${userName} has been created`});
+            } else {
+                response.status(401);
+                response.send({"message": `User ${userName} has NOT been created because of ${error}`});
+            }
+        });
+    } catch(e) {
+        console.error("The Exception occurred on /user");
+        console.error(e);
+    }
 });
 
 app.put('/settings', function(request, response){
-    const securityToken = request.headers["security-token"];
-    const userName = authentication.token2UserNameMap[securityToken];
-    if(userName == null || userName == undefined) {
-        response.status(401);
-        response.send({"message":`User for the security token supplied has not been found`});
-        return;
-    }
-    console.log(`Saving setting for ${userName} were called`);
-    console.log("Following settings were received:"+JSON.stringify(request.body));
-
-    fs.writeFile(`./settings/${userName}.json`, JSON.stringify(request.body), function (err) {
-        if (err) {
+    try {
+        const securityToken = request.headers["security-token"];
+        const userName = authentication.token2UserNameMap[securityToken];
+        if (userName == null || userName == undefined) {
             response.status(401);
-            response.send({"message":`User ${userName} settings were NOT saved because of ${err}`});
+            response.send({"message": `User for the security token supplied has not been found`});
             return;
         }
-        response.status(200);
-        response.send({"message":`The user ${userName} settings have been successfully saved`});
-        console.log(`The user ${userName} settings have been successfully saved`);
-    });
+        console.log(`Saving setting for ${userName} were called`);
+        console.log("Following settings were received:" + JSON.stringify(request.body));
+
+        fs.writeFile(`./settings/${userName}.json`, JSON.stringify(request.body), function (err) {
+            if (err) {
+                response.status(401);
+                response.send({"message": `User ${userName} settings were NOT saved because of ${err}`});
+                return;
+            }
+            response.status(200);
+            response.send({"message": `The user ${userName} settings have been successfully saved`});
+            console.log(`The user ${userName} settings have been successfully saved`);
+        });
+    } catch(e) {
+        console.error("The Exception occurred on /settings");
+        console.error(e);
+    }
 });
 
 app.get('/settings', function(request, response){
-    const securityToken = request.headers["security-token"];
-    const userName = authentication.token2UserNameMap[securityToken];
-    if(userName == null || userName == undefined) {
-        response.status(401);
-        response.send({"message":`User for the security token supplied has not been found`});
-        return;
-    }
-
-    console.log(`Read Setting for ${userName} were called`);
-    fs.readFile(`./settings/${userName}.json`,  function (err, buffer) {
-        if (err != null) {
-            response.status(404);
-            response.send({"message":`Settings are not read probably because the user's ${userName} settings have never been set}`});
+    try {
+        const securityToken = request.headers["security-token"];
+        const userName = authentication.token2UserNameMap[securityToken];
+        if (userName == null || userName == undefined) {
+            response.status(401);
+            response.send({"message": `User for the security token supplied has not been found`});
             return;
         }
-    response.status(200);
-        console.log(buffer.toString());
-        response.send(JSON.parse(buffer.toString()));
-        console.log("Following settings were sent:"+buffer.toString());
-        console.log(`The user ${userName} settings have been successfully retrieved`);
 
-    });
+        console.log(`Read Setting for ${userName} were called`);
+        fs.readFile(`./settings/${userName}.json`, function (err, buffer) {
+            if (err != null) {
+                response.status(404);
+                response.send({"message": `Settings are not read probably because the user's ${userName} settings have never been set}`});
+                return;
+            }
+            response.status(200);
+            console.log(buffer.toString());
+            response.send(JSON.parse(buffer.toString()));
+            console.log("Following settings were sent:" + buffer.toString());
+            console.log(`The user ${userName} settings have been successfully retrieved`);
+
+        });
+    } catch (e) {
+        console.error("The Exception occurred on /settings");
+        console.error(e);
+    }
 
 });
 
 
 // Rendering all the users and its status
 app.get('/user', function(request, response) {
-    const securityToken = request.headers["security-token"];
-    const listOfUsers = authentication.listUser(securityToken);
-    response.status(200);
-    response.send(listOfUsers);
+    try {
+        const securityToken = request.headers["security-token"];
+        const listOfUsers = authentication.listUser(securityToken);
+        response.status(200);
+        response.send(listOfUsers);
+    } catch(e) {
+        console.error("The Exception occurred on /settings");
+        console.error(e);
+    }
 });
 
 // The lines below are responsible for web-socket communication with the user's browser
@@ -185,64 +216,106 @@ logoffBrowserReflector.setRouterThat(roverRouter);
 
 browserRouter.ws('/login', loginBrowserReflector.shimThis);
 browserRouter.onLogin = function (command) {
-    const userNameFound = authentication.token2UserNameMap[command.token];
-    if((userNameFound != null && wsBrowserToken == null) ||
-        (wsBrowserToken != null && userNameFound == wsBrowserUserName)) {
-        loginBrowserReflector.sendThis(JSON.stringify(command)); // Back to browser
-        wsBrowserToken = command.token;
-        wsBrowserUserName = command.Payload;
-        wsBrowserLoginDate = Date.now();
-        return "Success";
-    } else {
-        return `Failure: The login token mismatch. Looks like the rover is already used by someone else '${wsBrowserUserName}'`
+    try {
+        const userNameFound = authentication.token2UserNameMap[command.token];
+        if ((userNameFound != null && wsBrowserToken == null) ||
+            (wsBrowserToken != null && userNameFound == wsBrowserUserName)) {
+            loginBrowserReflector.sendThis(JSON.stringify(command)); // Back to browser
+            wsBrowserToken = command.token;
+            wsBrowserUserName = command.Payload;
+            wsBrowserLoginDate = Date.now();
+            if (isRoverConnected()) {
+                loginRoverReflector.sendThis(`{"Command": "LoginBrowserAck", 
+                                               "Payload": "${wsBrowserUserName}",
+                                               "token": "${wsRoverAuthToken}"}`);
+            }
+            wsBrowserTimeoutHandler = setTimeout(() => {
+                wsBrowserToken = null;
+                wsBrowserUserName = null;
+                wsBrowserLoginDate = null;
+                const command = {"Command": "logoff", "Payload": wsBrowserUserName, "token": wsBrowserToken};
+                logoffBrowserReflector.sendThis(JSON.stringify(command));
+            }, 15000); // if no heartbeat arrived in 15 seconds then
+            return "Success";
+        } else {
+            return `Failure: The login token mismatch. Looks like the rover is already used by someone else '${wsBrowserUserName}'`
+        }
+    } catch(e) {
+        console.error("Exception happened onLogin");
+        console.error(e);
     }
 };
 
 browserRouter.ws('/coords', coordsBrowserReflector.shimThis); // These coordinates are coming from Browser, and they have to be sent into the Rover
 browserRouter.onCoordsReceived = function (command) {
-    if(wsBrowserToken != null && wsBrowserToken == command.token) {
-        if(isRoverConnected()) {
-            command.token = wsRoverAuthToken;
-            coordsRoverReflector.sendThis(JSON.stringify(command)); // Login information going to the rover
-            return "Success";
+    try {
+
+        if (wsBrowserToken != null && wsBrowserToken == command.token) {
+            if (isRoverConnected()) {
+                command.token = wsRoverAuthToken;
+                coordsRoverReflector.sendThis(JSON.stringify(command)); // Login information going to the rover
+                return "Success";
+            } else {
+                return "Failure: No user logged in";
+            }
         } else {
-            return "Failure: No user logged in";
+            return "Failure: wrong token";
         }
-    } else {
-        return "Failure: wrong token";
+    } catch(e) {
+        console.error("Exception occurred on CoordsReceived");
+        console.error(e);
     }
 }
 
 browserRouter.ws('/heartbeat', heartBeatBrowserReflector.shimThis);
 browserRouter.onHeartBeat = function(command) {
-    // Here token stop being a security one but becomes a timing mechanism
-    if (isRoverConnected()) {
-        command.source = "rover";
-        heartBeatRoverReflector.sendThis(JSON.stringify(command));
-        authentication.validateAndRefresh(wsRoverAuthToken);
-        return "Success";
-    } else {
-        command.source = "web-server";
-        heartBeatBrowserReflector.sendThis(JSON.stringify(command));
-        authentication.validateAndRefresh(wsBrowserToken);
-        return "Success";
+    try {
+        clearTimeout(wsBrowserTimeoutHandler); // Resetting the BrowserHandler for another 15 seconds
+        wsBrowserTimeoutHandler = setTimeout(() => {
+            wsBrowserToken = null;
+            wsBrowserUserName = null;
+            wsBrowserLoginDate = null;
+            const command = {"Command": "logoff", "Payload": wsBrowserUserName, "token": wsBrowserToken};
+            logoffBrowserReflector.sendThis(JSON.stringify(command));
+        }, 15000); // if no heartbeat arrived in 15 seconds then
+
+        // Here token stop being a security one but becomes a timing mechanism
+        if (isRoverConnected()) {
+            command.source = "rover";
+            heartBeatRoverReflector.sendThis(JSON.stringify(command));
+            authentication.validateAndRefresh(wsRoverAuthToken);
+            return "Success";
+        } else {
+            command.source = "web-server";
+            heartBeatBrowserReflector.sendThis(JSON.stringify(command));
+            authentication.validateAndRefresh(wsBrowserToken);
+            return "Success";
+        }
+    } catch(e) {
+        console.error("Exception occurred on onHeartBeat");
+        console.error(e);
     }
 }
 
 browserRouter.ws('/logoff', loginBrowserReflector.shimThis);
 browserRouter.onLogoff = function(command) {
-    if(wsBrowserToken != null && wsBrowserToken == payload.token) {
-        if(isBrowserConnected()) {
-            logoffBrowserReflector.sendThis(JSON.stringify(command)); // Logoff information going to the rover
-            wsBrowserToken = null;
-            wsBrowserUserName = null;
-            wsBrowserLoginDate = null;
-            return "Success";
+    try {
+        if (wsBrowserToken != null && wsBrowserToken == payload.token) {
+            if (isBrowserConnected()) {
+                logoffBrowserReflector.sendThis(JSON.stringify(command)); // Logoff information going to the rover
+                wsBrowserToken = null;
+                wsBrowserUserName = null;
+                wsBrowserLoginDate = null;
+                return "Success";
+            } else {
+                return "Failure: No user logged in";
+            }
         } else {
-            return "Failure: No user logged in";
+            return "Failure: wrong token";
         }
-    } else {
-        return "Failure: wrong token";
+    } catch(e) {
+        console.error("Exception occurred on onLogoff");
+        console.error(e);
     }
 }
 app.use("/browser", browserRouter);
@@ -262,9 +335,9 @@ roverRouter.onLogin = function(message) {
         wsRoverLoginDate = Date.now();
         return "Success";
     } catch (e) {
-        loginRoverReflector.sendThis(`{"Command": "print", 
+        loginRoverReflector.sendThis(`{"Command": "LoginAck", 
                                        "Payload": Failure: ${e.message}`);
-        console.log(`Login failed because of ${e.message}`);
+        console.error(`Login failed because of ${e.message}`);
         wsRoverUserName = null;
         wsRoverAuthToken = null;
         wsRoverLoginDate = null;
@@ -275,56 +348,70 @@ roverRouter.onLogin = function(message) {
 
 roverRouter.ws('/coords', coordsRoverReflector.shimThis); // From Rover's sensors data
 roverRouter.onCoordsReceived = function(command) {
-    // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
-    if(isRoverConnected()) {
-        if(command.token == wsRoverAuthToken) {
-            coordsRoverReflector.sendThis(JSON.stringify(command)); //  Echoing information back into rover
-            if(isBrowserConnected()) {
-                command.token = wsBrowserToken; // we need to substitute the token here so this command authenticated by browser
-                coordsBrowserReflector.sendThis(JSON.stringify(command)); // Redirecting information forward into browser
+    try {
+        // Somehow reflect this changes in real coordinates on the screen for that we have to simply forward it to the browser
+        if (isRoverConnected()) {
+            if (command.token == wsRoverAuthToken) {
+                coordsRoverReflector.sendThis(JSON.stringify(command)); //  Echoing information back into rover
+                if (isBrowserConnected()) {
+                    command.token = wsBrowserToken; // we need to substitute the token here so this command authenticated by browser
+                    coordsBrowserReflector.sendThis(JSON.stringify(command)); // Redirecting information forward into browser
+                }
+            } else {
+                return "Failure: The wrong token or never logged in";
             }
         } else {
-            return "Failure: The wrong token or never logged in";
+            return "Failure: Rover has not been connected yet";
         }
-    } else {
-        return "Failure: Rover has not been connected yet";
+    } catch(e) {
+        console.error("Exception occurred on onLogoff");
+        console.error(e);
     }
 };
 
 roverRouter.ws('/heartbeat', heartBeatRoverReflector.shimThis);
 roverRouter.onHeartBeat = function(command) {
-    // Here the task is simple return whatever rover send to you back to the browser
-    // Here token stop being a security one but becomes a timing mechanism
-    if (isBrowserConnected()) {
-        command.source = "rover";
-        heartBeatBrowserReflector.sendThis(JSON.stringify(command));
-        authentication.validateAndRefresh(wsRoverAuthToken);
-        return "Success";
-    } else {
-        return "Failure: The unexpected heart beat from the rover while it's marked as disconnected";
+    try {
+        // Here the task is simple return whatever rover send to you back to the browser
+        // Here token stop being a security one but becomes a timing mechanism
+        if (isBrowserConnected()) {
+            command.source = "rover";
+            heartBeatBrowserReflector.sendThis(JSON.stringify(command));
+            authentication.validateAndRefresh(wsRoverAuthToken);
+            return "Success";
+        } else {
+            return "Failure: The unexpected heart beat from the rover while it's marked as disconnected";
+        }
+    } catch (e) {
+        console.error("Exception occurred on /heartbeat");
+        console.error(e);
     }
-
 }
 
 roverRouter.ws('/logoff', logoffRoverReflector.shimThis);
 roverRouter.onLogoff = function(command) {
-    if(isRoverConnected()) {
-        if(wsRoverAuthToken == command.token) {
-            loginRoverReflector.sendThis(`{"Command": "logoff", 
-                                           "Payload": wsRoverUserName,
-                                           "token": "${command.token}"}`); // Echoing command back to the rover
-            if (isBrowserConnected()) {
-                command.token = wsBrowserToken; // we need to substitute the token here so this command authenticated by browser
-                heartBeatBrowserReflector.sendThis(JSON.stringify(command)); // Sending command forward to browser
+    try {
+        if (isRoverConnected()) {
+            if (wsRoverAuthToken == command.token) {
+                loginRoverReflector.sendThis(`{"Command": "logoff", 
+                                               "Payload": wsRoverUserName,
+                                               "token": "${command.token}"}`); // Echoing command back to the rover
+                if (isBrowserConnected()) {
+                    command.token = wsBrowserToken; // we need to substitute the token here so this command authenticated by browser
+                    heartBeatBrowserReflector.sendThis(JSON.stringify(command)); // Sending command forward to browser
+                }
+                wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
+                wsRoverUserName = null; // Rover user-name is rover
+                wsRoverLoginDate = null;
+            } else {
+                return "Failure: The wrong token";
             }
-            wsRoverAuthToken = null; // Rover's authentication token that is being created on the rover's login
-            wsRoverUserName = null; // Rover user-name is rover
-            wsRoverLoginDate = null;
         } else {
-            return "Failure: The wrong token";
+            return "Failure: The attempt to disconnect from disconnected rover";
         }
-    } else {
-        return "Failure: The attempt to disconnect from disconnected rover";
+    } catch(e) {
+        console.error("Exception occurred on /logoff'");
+        console.error(e);
     }
 }
 
