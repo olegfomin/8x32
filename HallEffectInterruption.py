@@ -12,16 +12,18 @@ class HallEffectInterruption:
 	wasCalled = False
 	amIPressed = False
 	
-	def __init__(self, gpioNumber):
+	def __init__(self, gpioNumber, doIPrintValues=False, onChange=None):
 		self.gpioNumber = gpioNumber
 		self.printerThreading = threading.Thread(target=self.printValues, daemon=True)
+		self.doIPrintValues = doIPrintValues;
+		self.onChange = onChange;
 		
 
 	def signal_handler(self, sig, frame):
 		GPIO.cleanup(self.gpioNumber)
 		sys.exit(0)
 	def hallSensorCallback(self, channel):
-		if(not self.wasCalled):
+		if(not self.wasCalled and self.doIPrintValues):
 			self.printerThreading.start();
 			self.wasCalled = True
 		if(not GPIO.input(self.gpioNumber)):
@@ -30,6 +32,8 @@ class HallEffectInterruption:
 		else:
 			self.amIPressed = False
 			self.releasedCounter+=1
+		if(not self.onChange == None):
+			 self.onChange(self.amIPressed, self.pressedCounter, self.releasedCounter)
 				
 	def printValues(self):
 		while True:
