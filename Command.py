@@ -19,29 +19,41 @@ CALLIBRATION_LEFT  = 1.0
 CALLIBRATION_RIGHT = 0.95
 DISTANCE2TIME_FORWARD=0.005
 DISTANCE2TIME_BACKWARD=0.0043
+DISTANCE2TIME_LEFT=0.0043
+DISTANCE2TIME_RIGHT=0.0043
 
-def andle2TimePivot(angle) :
+def andle2TimePivotRight(angle) :
 	coefficient=0; 
-	if(angle >= 0 and angle < 5):
-		coefficient = 0.15
-	elif(angle >= 5 and angle < 10):
-		coefficient = 0.10
-	elif(angle >= 10 and angle < 20):
-		coefficient = 0.047
-	elif(angle >= 30 and angle < 40):
+	if(angle >= 0 and angle < 2):
 		coefficient = 0.03
+	elif(angle >=2 and angle < 4):
+		coefficient = 0.027	
+	elif(angle >= 5 and angle < 8):
+		coefficient = 0.025
+	elif(angle >= 8 and angle < 10):
+		coefficient = 0.021
+	elif(angle >= 10 and angle < 15):
+		coefficient = 0.017
+	elif(angle >= 15 and angle < 20):
+		coefficient = 0.015
+	elif(angle >= 20 and angle < 25):
+		coefficient = 0.013
+	elif(angle >= 25 and angle < 30):
+		coefficient = 0.012
+	elif(angle >= 30 and angle < 40):
+		coefficient = 0.011
 	elif(angle >= 40 and angle < 50):
-		coefficient = 0.02
+		coefficient = 0.01
 	elif(angle >= 50 and angle < 60):
-		coefficient = 0.019
+		coefficient = 0.0095
 	elif(angle >= 60 and angle < 70):
-		coefficient = 0.016
+		coefficient = 0.0082
 	elif(angle >= 70 and angle < 80):
-		coefficient = 0.014
+		coefficient = 0.0079
 	elif(angle >= 80 and angle < 90):
-		coefficient = 0.0134
+		coefficient = 0.0076
 	elif(angle >= 90 and angle < 100):
-		coefficient = 0.0132	 
+		coefficient = 0.00738 
 	elif(angle >= 100 and angle < 110):
 		coefficient = 0.0126	 
 	elif(angle >= 110 and angle < 120):
@@ -62,20 +74,86 @@ def andle2TimePivot(angle) :
 		 coefficient = 0.0085
 	print(coefficient)
 	return coefficient
+	
+def andle2TimePivotLeft(angle) :
+	coefficient=0; 
+	if(angle >= 0 and angle < 2):
+		coefficient = 0.032
+	elif(angle >=2 and angle < 4):
+		coefficient = 0.029	
+	elif(angle >= 5 and angle < 8):
+		coefficient = 0.027
+	elif(angle >= 8 and angle < 10):
+		coefficient = 0.023
+	elif(angle >= 10 and angle < 15):
+		coefficient = 0.018
+	elif(angle >= 15 and angle < 20):
+		coefficient = 0.015
+	elif(angle >= 20 and angle < 25):
+		coefficient = 0.013
+	elif(angle >= 25 and angle < 30):
+		coefficient = 0.012
+	elif(angle >= 30 and angle < 40):
+		coefficient = 0.01
+	elif(angle >= 40 and angle < 50):
+		coefficient = 0.009
+	elif(angle >= 50 and angle < 60):
+		coefficient = 0.0087
+	elif(angle >= 60 and angle < 70):
+		coefficient = 0.0085
+	elif(angle >= 70 and angle < 80):
+		coefficient = 0.008
+	elif(angle >= 80 and angle < 90):
+		coefficient = 0.0078
+	elif(angle >= 90 and angle < 100):
+		coefficient = 0.0074 
+	elif(angle >= 100 and angle < 110):
+		coefficient = 0.0126	 
+	elif(angle >= 110 and angle < 120):
+		coefficient = 0.01	 
+	elif(angle >= 120 and angle < 130):
+		coefficient = 0.0095	 
+	elif(angle >= 130 and angle < 140):
+		coefficient = 0.0090	 
+	elif(angle >= 140 and angle < 150):
+		coefficient = 0.0088	 
+	elif(angle >= 150 and angle < 160):
+		coefficient = 0.0087	 
+	elif(angle >= 160 and angle < 170):
+		coefficient = 0.0086	 
+	elif(angle >= 170 and angle < 180):
+		coefficient = 0.0085
+	else:
+		 coefficient = 0.0085
+	print(coefficient)
+	return coefficient	
 		
-
+	
 def m1Start(direction, power) :
 	callibratedPower = CALLIBRATION_LEFT*power 
-	MOTOR.dcCONFIG(0,1,direction,callibratedPower,2.5)           #configure dc motor 1 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,1,direction,callibratedPower,2.5)           #configure dc motor 1 on the MOTORplate at address 0 
+	MOTOR.dcSTART(0,1)
+	
+	
+def m1StartFast(direction, power) :
+	callibratedPower = CALLIBRATION_LEFT*power 
+	MOTOR.dcCONFIG(0,1,direction,callibratedPower,0)           #configure dc motor 1 on the MOTORplate at address 0 
 	MOTOR.dcSTART(0,1)                                #Start DC motor
+	
 
 def m1Stop():
 	MOTOR.dcSTOP(0,1)                            #stop the motor
 	
 def m2Start(direction, power) : 
 	callibratedPower = CALLIBRATION_LEFT*power 
-	MOTOR.dcCONFIG(0,2,direction,callibratedPower,2.5)           #configure dc motor 2 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,2,direction,callibratedPower,2.5)           #configure dc motor 2 on the MOTORplate at address 0  
 	MOTOR.dcSTART(0,2)                                #Start DC motor
+
+def m2StartFast(direction, power) : 
+	callibratedPower = CALLIBRATION_LEFT*power 
+	MOTOR.dcCONFIG(0,2,direction,callibratedPower,0.0)           #configure dc motor 2 on the MOTORplate at address 0  
+	MOTOR.dcSTART(0,2)                                #Start DC motor
+	
 
 def m2Stop():
 	MOTOR.dcSTOP(0,2)                            #stop the motor
@@ -83,7 +161,12 @@ def m2Stop():
 
 def m3Start(direction, power) : 
 	callibratedPower = CALLIBRATION_RIGHT*power
-	MOTOR.dcCONFIG(0,3,direction,callibratedPower,2.5)           #configure dc motor 3 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,3,direction,callibratedPower,2.5)           #configure dc motor 3 on the MOTORplate at address 0  
+	MOTOR.dcSTART(0,3)                                #Start DC motor
+
+def m3StartFast(direction, power) : 
+	callibratedPower = CALLIBRATION_RIGHT*power
+	MOTOR.dcCONFIG(0,3,direction,callibratedPower,0.0)           #configure dc motor 3 on the MOTORplate at address 0  
 	MOTOR.dcSTART(0,3)                                #Start DC motor
 
 def m3Stop():
@@ -91,29 +174,35 @@ def m3Stop():
 
 def m4Start(direction, power) : 
 	callibratedPower = CALLIBRATION_RIGHT*power
-	MOTOR.dcCONFIG(0,4,direction,callibratedPower,2.5)           #configure dc motor 4 on the MOTORplate at address 0 being configured for clockwise 
+	MOTOR.dcCONFIG(0,4,direction,callibratedPower,2.5)           #configure dc motor 4 on the MOTORplate at address 0 
 	MOTOR.dcSTART(0,4)                                #Start DC motor
+
+def m4StartFast(direction, power) : 
+	callibratedPower = CALLIBRATION_RIGHT*power
+	MOTOR.dcCONFIG(0,4,direction,callibratedPower,0.0)           #configure dc motor 4 on the MOTORplate at address 0 
+	MOTOR.dcSTART(0,4)                                #Start DC motor
+
 
 def m4Stop():
 	MOTOR.dcSTOP(0,4)                            #stop the motor 4
 	
 def turnRightPivot(angle): 
-  m1Start('ccw', 100)
-  m2Start('ccw', 100)
-  m3Start('cw', 100)
-  m4Start('cw', 100)
-  time.sleep(angle*andle2TimePivot(angle))
+  m1StartFast('ccw', 100)
+  m2StartFast('ccw', 100)
+  m3StartFast('cw', 100)
+  m4StartFast('cw', 100)
+  time.sleep(angle*andle2TimePivotRight(angle))
   m1Stop()
   m2Stop()
   m3Stop()
   m4Stop()
   
 def turnLeftPivot(angle): 
-  m1Start('cw', 100)
-  m2Start('cw', 100)
-  m3Start('ccw', 100)
-  m4Start('ccw', 100)
-  time.sleep(angle*andle2TimePivot(angle))
+  m1StartFast('cw', 100)
+  m2StartFast('cw', 100)
+  m3StartFast('ccw', 100)
+  m4StartFast('ccw', 100)
+  time.sleep(angle*andle2TimePivotLeft(angle))
   m1Stop()
   m2Stop()
   m3Stop()
@@ -162,7 +251,29 @@ def goBackward(distance):
   m2Stop()
   m3Stop()
   m4Stop()
+  
+def goSidewayRight(distance):
+	m2Start("ccw", 100)
+	m1Start("cw", 100)
+	m3Start("cw", 100)  
+	m4Start("ccw", 100) 
+	time.sleep(distance*DISTANCE2TIME_RIGHT)
+	m1Stop()
+	m2Stop()
+	m3Stop()
+	m4Stop()
+	
 
+def goSidewayLeft(distance):
+	m2Start("cw", 100)
+	m1Start("ccw", 100)
+	m3Start("ccw", 100)  
+	m4Start("cw", 100) 
+	time.sleep(distance*DISTANCE2TIME_LEFT)
+	m1Stop()
+	m2Stop()
+	m3Stop()
+	m4Stop()
 
 
 '''goBackward(5000)
@@ -200,7 +311,7 @@ class Record:
 		
 class RecordPlayer:
 	DEFAULT_DELAY_BETWEEN_COMMANDS = 0.1
-	PROLONG_DELAY_BETWEEN_COMMANDS = 3.0;
+	PROLONG_DELAY_BETWEEN_COMMANDS = 5.0;
 	
 	def __init__(self, aRecord):
 		self.record=aRecord
@@ -214,9 +325,11 @@ class RecordPlayer:
 			command = self.record.getCommand()
 			print(previousCommand)
 			if((command.name == 'goForward' and previousCommand.name == 'goBackward') or 
-			  (command.name == 'goBackward' and previousCommand.name == 'goForward')): 
+			  (command.name == 'goBackward' and previousCommand.name == 'goForward') or
+			  (previousCommand.name == 'turnLeftPivot' or previousCommand.name == 'turnRightPivot')): 
 				  print('prolong delay betweeen commands');
 				  time.sleep(self.PROLONG_DELAY_BETWEEN_COMMANDS)
+				  
 				  
 			if(command.name == 'goBackward'):
 				goBackward(command.value)
@@ -268,6 +381,12 @@ class TapeRecorder:
 			moveCommandName = 'goForward'
 		elif(length > 30):
 			moveCommandName = 'goBackward'
+			
+			
+		if(width < -30 && (length > -30 && length < 30)):
+			moveCommandName = 'goSidewayLeft'
+		elif(width > 30 && (length > -30 && length < 30)):
+			moveCommandName = 'goSidewayRight'	 	
 			
 		moveCommand = Command(moveCommandName)	
 		 
