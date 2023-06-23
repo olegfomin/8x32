@@ -2,7 +2,6 @@ import RPi.GPIO as GPIO
 import threading
 import time
 
-
 class HallEffectInterruption:
 	PRINT_INTERVAL = 5.5
 	
@@ -37,9 +36,8 @@ class HallEffectInterruption:
 				
 	def printValues(self):
 		while True:
-			print("SignalOn detected!")
+			print("Engine number="+str(self.gpioNumber))
 			print(self.pressedCounter)
-			print("SignalOff detected!")
 			print(self.releasedCounter)
 			print(self.amIPressed)
 			time.sleep(self.PRINT_INTERVAL)

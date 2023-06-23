@@ -3,6 +3,14 @@ import piplates.MOTORplate as MOTOR          #import the MOTORplate module
 import queue
 import json
 import math
+from HallEffectInterruption import HallEffectInterruption
+import RPi.GPIO as GPIO
+M1_GPIO = 23
+M2_GPIO = 24
+M3_GPIO = 27
+M4_GPIO = 3
+
+
 
 # Implementing the command pattern that encapsulates all the name
 # and single value for a command. Then all the commands are
@@ -21,6 +29,45 @@ DISTANCE2TIME_FORWARD=0.005
 DISTANCE2TIME_BACKWARD=0.0043
 DISTANCE2TIME_LEFT=0.0043
 DISTANCE2TIME_RIGHT=0.0043
+MILLISPERSEC = 3.25
+
+numberOfM1Revs = 0
+prevNumberOfM1Revs = 0
+numberOfM2Revs = 0
+prevNumberOfM2Revs = 0
+numberOfM3Revs = 0
+prevNumberOfM3Revs = 0
+numberOfM4Revs = 0
+prevNumberOfM4Revs = 0
+
+
+def onChange1(amIPressed, pressedCounter, releasedCounter):
+		numberOfM1Revs = releasedCounter
+
+def onChange2(amIPressed, pressedCounter, releasedCounter):
+		numberOfM2Revs = releasedCounter
+
+def onChange3(amIPressed, pressedCounter, releasedCounter):
+		numberOfM3Revs = releasedCounter
+
+def onChange4(amIPressed, pressedCounter, releasedCounter):
+		numberOfM4Revs = releasedCounter
+		
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(M1_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(M2_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(M3_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(M4_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+hei1 = HallEffectInterruption(M1_GPIO, True, onChange1)
+hei2 = HallEffectInterruption(M2_GPIO, True, onChange2)
+hei3 = HallEffectInterruption(M3_GPIO, True, onChange3)
+hei4 = HallEffectInterruption(M4_GPIO, True, onChange4)
+
+GPIO.add_event_detect(M1_GPIO, GPIO.BOTH, callback=hei1.hallSensorCallback, bouncetime=5)
+GPIO.add_event_detect(M2_GPIO, GPIO.BOTH, callback=hei2.hallSensorCallback, bouncetime=5)
+GPIO.add_event_detect(M3_GPIO, GPIO.BOTH, callback=hei3.hallSensorCallback, bouncetime=5)
+GPIO.add_event_detect(M4_GPIO, GPIO.BOTH, callback=hei4.hallSensorCallback, bouncetime=5)
 
 def andle2TimePivotRight(angle) :
 	coefficient=0; 
@@ -143,6 +190,10 @@ def m1StartFast(direction, power) :
 
 def m1Stop():
 	MOTOR.dcSTOP(0,1)                            #stop the motor
+
+#Finds the number of 60 degree revolutions since the last check	
+#def m1Revolutions():
+	
 	
 def m2Start(direction, power) : 
 	callibratedPower = CALLIBRATION_LEFT*power 
@@ -253,8 +304,8 @@ def goBackward(distance):
   m4Stop()
   
 def goSidewayRight(distance):
-	m2Start("ccw", 100)
-	m1Start("cw", 100)
+	m1Start("ccw", 100)
+	m2Start("cw", 100)
 	m3Start("cw", 100)  
 	m4Start("ccw", 100) 
 	time.sleep(distance*DISTANCE2TIME_RIGHT)
@@ -265,8 +316,8 @@ def goSidewayRight(distance):
 	
 
 def goSidewayLeft(distance):
-	m2Start("cw", 100)
-	m1Start("ccw", 100)
+	m1Start("cw", 100)
+	m2Start("ccw", 100)
 	m3Start("ccw", 100)  
 	m4Start("cw", 100) 
 	time.sleep(distance*DISTANCE2TIME_LEFT)
@@ -349,6 +400,12 @@ class RecordPlayer:
 			elif(command.name == 'turnLeftSimple'):
 				turnLeftSimple(command.value)
 				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
+			elif(command.name == 'goSidewayLeft'):
+				goSidewayLeft(command.value)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
+			elif(command.name == 'goSidewayRight'):
+				goSidewayRight(command.value)
+				time.sleep(self.DEFAULT_DELAY_BETWEEN_COMMANDS)
 			elif(command.name == 'fire'):
 				#empty command for now
 				time.sleep(self.DELAY_BETWEEN_COMMANDS)
@@ -376,54 +433,47 @@ class TapeRecorder:
 		width = xf-xs;
 		length = yf - ys;
 		
-		moveCommandName = 'none' 
-		if(length < -30):
-			moveCommandName = 'goForward'
-		elif(length > 30):
-			moveCommandName = 'goBackward'
+		turnCommand = Command('none')
+		moveCommand = Command('none')
+		turnBackCommand = Command('none')
+		distance = 0
+		if(abs(width) < 25 and abs(length) > 25):
+			moveCommand.name = 'goBackward'
+			if(length < 0):
+				 moveCommand.name = 'goForward'
+			moveCommand.value = abs(length)*MILLISPERSEC
+		elif(abs(width) > 25 and abs(length) < 25):
+			moveCommand.name = 'goSidewayRight'
+			if(width < 0):
+				 moveCommand.name = 'goSidewayLeft'
+			moveCommand.value = abs(width)*MILLISPERSEC
+		else:
+			distance = math.sqrt(width**2+length**2) # calculating how long shall we go if there is an angle
+			absWidth = abs(width)
+			sine = absWidth/distance 
+			angleInRadians = math.asin(sine)	
+			angleInDegrees = math.degrees(angleInRadians)
+			moveCommand.value = distance*MILLISPERSEC; # Turnrng pixels in millimeters
+			turnCommand.value = angleInDegrees
 			
-			
-		if(width < -30 && (length > -30 && length < 30)):
-			moveCommandName = 'goSidewayLeft'
-		elif(width > 30 && (length > -30 && length < 30)):
-			moveCommandName = 'goSidewayRight'	 	
-			
-		moveCommand = Command(moveCommandName)	
-		 
-		turnCommandName = 'none' # the target is straight ahead, there no need to turn
-		if(width > 23):
-			if(moveCommandName == 'goBackward'): # Swapping right and letf turns if going backward
-				turnCommandName = 'turnLeftPivot'
-			else:		
-				turnCommandName = 'turnRightPivot'
-		elif(width < -23):
-			if(moveCommandName == 'goBackward'): # Swapping right and letf turns if going backward
-				turnCommandName = 'turnRightPivot'
-			else:
-				turnCommandName = 'turnLeftPivot'
-			
-		turnCommand = Command(turnCommandName)
-		
-		diagonal = abs(length) # in case we go straight	ahead
-		if(turnCommandName != 'none'):	
-		    diagonal = math.sqrt(width**2+length**2) # calculating how long shall we go if there is an angle
-		    absWidth = abs(width)
-		    sine = absWidth/diagonal 
-		    angleInRadians = math.asin(sine)	
-		    angleInDegrees = math.degrees(angleInRadians)
-		    turnCommand.value = angleInDegrees
-		    
-		if(moveCommandName != 'none'):
-			 moveCommand.value = diagonal*3.25; # Turning pixels in millimeters
-		
-		turnBackCommandName = 'none'	 
-		if(turnCommandName == 'turnLeftPivot'):
-			turnBackCommandName = 'turnRightPivot'
-		elif(turnCommandName == 'turnRightPivot'):
-			turnBackCommandName = 'turnLeftPivot'
-		
-		turnBackCommand = Command(turnBackCommandName)
-		turnBackCommand.value = turnCommand.value
+			moveCommand.name = 'goBackward'
+			if(length < 0):
+				moveCommand.name = 'goForward'
+			if(width > 0):
+				if(moveCommand.name == 'goBackward'): # Swapping right and letf turns if going backward
+					turnCommand.name = 'turnLeftPivot'
+				else:		
+					turnCommand.name = 'turnRightPivot'
+			elif(width < -23):
+				if(moveCommand.name == 'goBackward'): # Swapping right and letf turns if going backward
+					turnCommand.name = 'turnRightPivot'
+				else:
+					turnCommand.name = 'turnLeftPivot'
+
+			turnBackCommand.value = 'turnRightPivot'
+			if(turnCommand.name == 'turnRightPivot'):
+				 turnBackCommand.value = 'turnLeftPivot' 
+			turnBackCommand.value = turnCommand.value
 		
 		self.record.addCommand(turnCommand)
 		self.record.addCommand(moveCommand)
