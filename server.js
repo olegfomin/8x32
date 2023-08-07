@@ -335,13 +335,17 @@ roverRouter.onLogin = function(message) {
         wsRoverLoginDate = Date.now();
         return "Success";
     } catch (e) {
-        loginRoverReflector.sendThis(`{"Command": "LoginAck", 
-                                       "Payload": Failure: ${e.message}`);
-        console.error(`Login failed because of ${e.message}`);
-        wsRoverUserName = null;
-        wsRoverAuthToken = null;
-        wsRoverLoginDate = null;
-        return `Failure: Authentication failed ${e.message}`;
+        try {
+            loginRoverReflector.sendThis(`{"Command": "LoginAck", 
+                                           "Payload": Failure: ${e.message}`);
+            console.error(`Login failed because of ${e.message}`);
+            wsRoverUserName = null;
+            wsRoverAuthToken = null;
+            wsRoverLoginDate = null;
+            return `Failure: onLogin failed ${e.message}`;
+        } catch(e1) {
+            console.log(`onLoginFailed with ${e1.message}`);
+        }
     }
 
 };
