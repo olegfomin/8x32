@@ -42,7 +42,6 @@ class RedRelay:
 	def isOff(self):
 		return not(self.OnOff)
 		
-				  
 if __name__ == '__main__':
 		
 

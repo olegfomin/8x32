@@ -1,11 +1,13 @@
-from RedRelay.py import RedRelay
+from ArduinoConnection import ArduinoConnection
+from Throthle import Throthle
+from RedRelay import RedRelay
+import threading
 
-''' There are five commands that are being used for now
+''' There are six commands that are being used for now
 'F' for Forward
 'B' for Backward
 'L' for Left
 'R' for Fight
-'U' for undo command
 'N' for none command
 
 All the commands are supplied with number of the millis
@@ -29,32 +31,71 @@ RED_RELAY_LEFT  = 4
 RED_RELAY_RIGHT = 5
 
 class ChassisCommand:
-	commandId     = "N"
-	serial        = None
-	duration      = 0
-	redRelayLeft  = None
-	redRelayRight = None
+	command = "N" # Originaly it is 'None'
+	arduinoConnection = None
+	redThrothleLeft   = None
+	redThrothleRight  = None
 	
-	def __init__(self, 
-	             aCommandId, 
-	             aSerialPath,
-	             aSerialSpeed, 
-	             
-	             aRedRelayLeftPin,
-	             aRedRelayLeftDuration,
-	             aRedRelayLeftNumberOfHalts,
-	             aRedRelayLeftHaltDuration,
-	             
-	             aRedRelayRightPin, 
-	             aRedRelayRightDuration,
-	             aRedRelayRightNumberOfHalts,
-	             aRedRelayRightHaltDuration 
-	             ):
-		self.commandId     = aCommandId
-		self.serial        = aSerial
-		self.redRelayLeft  = RedRelay(aRedRelayPinLeft)
-		self.redRelayRight = RedRelay(aRedRelayPinRight)
+	def __init__(self,
+				anArduinoConnection,
+				aLeftThrothle,
+				aRightThrothle):
+		self.arduinoConnection = anArduinoConnection
+		self.redThrothleLeft   = aLeftThrothle
+		self.redThrothleRight  = aRightThrothle
 		
-		self.duration = aDuration
+	def execute(self, aDuration):
+		self.redThrothleLeft.setTotalDuration(aDuration)
+		self.redThrothleRight.setTotalDuration(aDuration)
+		leftThread = threading.Thread(target=self.redThrothleLeft.rattle)
+		leftThread.start()
+		rightThread = threading.Thread(target=self.redThrothleRight.rattle)
+		rightThread.start()
+		arduinoConnection.send(self.command, aDuration)
 		
-	def
+		
+	def undo(self):
+		raise Exception("'undo' is not implemented in base class please use any decendent class")
+		
+
+class ChassisForward(ChassisCommand):
+	command = "F" # Going forward
+	def undo(self):
+		return ChassisBackward(self.arduinoConnection, self.redThrothleLeft, self.redThrothleRight)
+	
+	
+class ChassisBackward(ChassisCommand):
+	command = "B" # Going forward
+	def undo():
+		return ChassisForward(self.arduinoConnection, self.redThrothleLeft, self.redThrothleRight)
+		
+class ChassisTurnRight(ChassisCommand):
+	command = "R" # Going right
+	def undo():
+		return ChassisTurnLeft(self.arduinoConnection, self.redThrothleLeft, self.redThrothleRight)
+		
+class ChassisTurnLeft(ChassisCommand):
+	command = "L" # Going left
+	def undo():
+		return ChassisTurnRight(self.arduinoConnection, self.redThrothleLeft, self.redThrothleRight)
+
+		
+if __name__ == '__main__':
+	duration = 20
+	command = "F"
+	arduinoConnection = ArduinoConnection()
+	
+	relay4 = RedRelay(4)
+	throthleRight = Throthle(relay4, 10, 1) 
+
+	relay5 = RedRelay(5)
+	throthleLeft = Throthle(relay5, 1, 0) 
+	
+	
+	cf = ChassisBackward(arduinoConnection, throthleRight, throthleLeft)
+	cf.execute(duration) 
+#	arduinoConnection = ArduinoConnection()
+#	arduinoConnection.send(command, duration)
+	
+
+
