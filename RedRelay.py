@@ -33,6 +33,8 @@ class RedRelay:
 	def off(self):
 		if(not(self.onOff)): return
 		self.onOff = not(self.onOff)
+		print('self.onOff')
+		print(self.onOff)
 		GPIO.output(self.pinNumber, self.onOff)
 		self.onOff = False
 		
